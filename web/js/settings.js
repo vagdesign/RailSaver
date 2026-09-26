@@ -7,7 +7,8 @@ export const DEFAULTS = {
   // --- clock ---
   caseStyle: 'station',   // 'station' (deep drum, like the platform clocks) | 'wall' (slim case)
   finish: 'brushed',      // 'chrome' (chrome / nickel mirror) | 'brushed' (inox) | 'aged' (rust, mould on the glass)
-  glassShape: 'flat',     // 'flat' (slight dome) | 'dome' (spherical) | 'none'
+  glassShape: 'flat',     // 'flat' (slight dome) | 'dome' (thick spherical crystal) | 'lens' (dome lens, thick refracting edge) | 'none'
+  lensStrength: 0.6,      // 'lens': how strongly the edge bends the dial, 0..1
   glassReflections: 1.0,  // strength of reflections on the glass, 0..2
   mirror: 0.6,            // how mirror-like the metal is, 0 (soft) .. 1 (crisp mirror)
   stopSeconds: 6,         // how long the second hand waits at 12 (the real clock: 1.5 s)

@@ -46,7 +46,11 @@
   .presets button { text-align: left; padding: 8px 10px; }
   .presets button small { display: block; color: var(--muted); font-size: 11.5px; }
   .credits { color: var(--muted); font-size: 12px; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px; }
-  .credits a { color: #cfd3d8; }
+  .credits a { color: #8ab4f8; text-decoration: none; }
+  .credits a:hover { text-decoration: underline; }
+  .credits .made { margin: 8px 0 4px; color: #b5bac1; font-size: 12.5px; }
+  .credits a.brand { color: #ff8c1a; font-weight: 600; }
+  .credits a.brand:hover { color: #ffa64d; }
   @media (max-width: 760px) {
     body { grid-template-columns: 1fr; grid-template-rows: 38vh 1fr auto; }
     main { grid-row: 1; } aside { grid-row: 2; border-right: 0; }
@@ -78,7 +82,10 @@
       <div class="range"><input type="range" id="mirror" min="0" max="1" step="0.05"><output></output></div>
       <div class="hint">How strongly and sharply the metal reflects the surroundings.</div></div>
     <div class="row"><label for="glassShape">Glass</label>
-      <select id="glassShape"><option value="flat">Flat (slight dome)</option><option value="dome">Spherical (bulging)</option><option value="none">No glass</option></select></div>
+      <select id="glassShape"><option value="flat">Flat (slight dome)</option><option value="dome">Spherical (bulging)</option><option value="lens">Dome lens (thick edge)</option><option value="none">No glass</option></select></div>
+    <div class="row" id="lensStrengthRow"><label for="lensStrength">Lens edge</label>
+      <div class="range"><input type="range" id="lensStrength" min="0" max="1" step="0.05"><output></output></div>
+      <div class="hint">How strongly the thick edge of the dome bends the markers and hands.</div></div>
     <div class="row"><label for="glassReflections">Glass reflections</label>
       <div class="range"><input type="range" id="glassReflections" min="0" max="2" step="0.05"><output></output></div></div>
   </details>
@@ -165,8 +172,13 @@
   </details>
 
   <div class="credits">
-    Swiss railway clock design by Hans Hilfiker (1944), second hand 1953. RailSaver is not affiliated with SBB CFF FFS or Mondaine.<br>
-    Made by Vangelis Makridakis &amp; Claude · <a href="https://github.com/vagdesign/RailSaver" target="_blank" rel="noopener">github.com/vagdesign/RailSaver</a>
+    Swiss railway clock design by Hans Hilfiker (1944), second hand 1953. RailSaver is not affiliated with SBB CFF FFS or Mondaine.
+    Skies: <a href="https://polyhaven.com/hdris" target="_blank" rel="noopener">Poly Haven</a> (CC0).
+    <div class="made">
+      RailSaver <span id="credVer"></span> · created by <a href="https://www.ax-easy.com" target="_blank" rel="noopener">Vangelis Makridakis</a> &amp;
+      <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a> · by <a class="brand" href="https://www.ax-easy.com" target="_blank" rel="noopener">Ax-Easy</a>
+    </div>
+    <a href="https://github.com/vagdesign/RailSaver" target="_blank" rel="noopener">github.com/vagdesign/RailSaver</a>
   </div>
 </aside>
 <main><iframe id="preview" title="Preview" src="index.html?mode=window&amp;audio=1"></iframe></main>

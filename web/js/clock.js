@@ -108,7 +108,7 @@ function markersGeometry() {
 
 // ---------------------------------------------------------------- the clock
 
-export function createClock({ caseStyle = 'station', finish = 'brushed', glassShape = 'flat', glassReflections = 1, mirror = 0.6, segments = 160 } = {}) {
+export function createClock({ caseStyle = 'station', finish = 'brushed', glassShape = 'flat', glassReflections = 1, mirror = 0.6, lensStrength = 0.6, segments = 160 } = {}) {
   const C = CASES[caseStyle] || CASES.station;
   const group = new THREE.Group();
   const disposables = [];
@@ -210,7 +210,7 @@ export function createClock({ caseStyle = 'station', finish = 'brushed', glassSh
   // --- glass: a crystal that shows reflections only (additive), either almost
   // flat (a slight dome) or strongly spherical, which bends the reflections
   // of the sky round like the bulging glass of old station clocks ---
-  let glassMesh = null, grimeMesh = null, lensMat = null;
+  let glassMesh = null, grimeMesh = null, lensMat = null, lensFilm = null;
   const glassMat = track(new THREE.MeshPhysicalMaterial({
     color: 0x000000, metalness: 0, roughness: 0.02, ior: 1.52, specularIntensity: 1,
     transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, premultipliedAlpha: false,
@@ -245,6 +245,31 @@ export function createClock({ caseStyle = 'station', finish = 'brushed', glassSh
     glassMesh.renderOrder = 10;
     group.add(glassMesh);
     // Keep the bezel above the thick rim so the crystal sits in it.
+  } else if (glassShape === 'lens') {
+    // Dome lens (like domed wall clocks and ball clocks): a solid crystal whose
+    // top is gently curved and clear, while the outer ~8% bends steeply down
+    // to the rim. Refraction depends on the surface slope, so the dial, the
+    // markers and the hand tips are bent and magnified only in that ring, and
+    // it moves as the clock turns.
+    const R = LIP_R - 0.004, base = 0.094, h = 0.16, p = 7;
+    const outer = [];
+    const n = 96;
+    for (let k = 0; k <= n; k++) {
+      // Superellipse r^p + z^p = 1, sampled densely near the rim.
+      const t = (Math.PI / 2) * Math.pow(k / n, 2.2);
+      outer.push(new THREE.Vector2(R * Math.pow(Math.cos(t), 2 / p), base + h * Math.pow(Math.sin(t), 2 / p)));
+    }
+    const pts = [new THREE.Vector2(0.0001, base), new THREE.Vector2(R - 0.004, base), ...outer];
+    pts[pts.length - 1].x = 0.0001;
+    lensMat = track(new THREE.MeshPhysicalMaterial({
+      color: 0xffffff, metalness: 0, roughness: 0.01, transmission: 1, thickness: 0.06 + 0.34 * lensStrength, ior: 1.5,
+      specularIntensity: 1, attenuationColor: new THREE.Color(0.95, 0.98, 0.97), attenuationDistance: 3,
+    }));
+    glassMesh = new THREE.Mesh(track(lathe(pts, segments)), lensMat);
+    glassMesh.renderOrder = 10;
+    group.add(glassMesh);
+    // Film for mould: the outer surface only, rim -> centre (grime UVs expect that).
+    lensFilm = track(lathe(outer.map((v) => new THREE.Vector2(v.x * 0.998, v.y - 0.002)), segments));
   } else if (glassShape !== 'none') {
     const a = LIP_R - 0.002, sag = Z.glassSag;
     const Rs = (a * a + sag * sag) / (2 * sag);
@@ -259,7 +284,7 @@ export function createClock({ caseStyle = 'station', finish = 'brushed', glassSh
   // Aged clock: mould and grime on the glass (a thin film just inside the outer surface).
   if (glassMesh && fin.grime) {
     const gm = track(new THREE.MeshStandardMaterial({ map: fin.grime, transparent: true, roughness: 0.95, metalness: 0, depthWrite: false }));
-    let film = glassMesh.geometry;
+    let film = lensFilm || glassMesh.geometry;
     if (glassShape === 'dome') {
       const a = LIP_R - 0.016, sag = 0.34 - 0.17 - 0.004;
       const Rs = (a * a + sag * sag) / (2 * sag);
@@ -295,6 +320,8 @@ export function createClock({ caseStyle = 'station', finish = 'brushed', glassSh
     setGlassReflections(v) { reflect.glass = v; applyReflections(); },
     /** How mirror-like the metal (and the glass) is, 0..1. */
     setMirror(v) { reflect.mirror = v; applyReflections(); },
+    /** Dome lens: how strongly its edge bends the dial, 0..1. */
+    setLensStrength(v) { if (lensMat && glassShape === 'lens') lensMat.thickness = 0.06 + 0.34 * v; },
     dispose() {
       for (const d of disposables) d.dispose();
     },

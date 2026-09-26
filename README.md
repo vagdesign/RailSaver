@@ -4,7 +4,7 @@ A screen saver for **Windows** (and **macOS**) showing the iconic Swiss railway 
 
 - **Three case finishes**: *chrome / nickel* (a clean mirror), *brushed stainless* (inox, hairline grooves around the drum, polished bezel) and *aged* (a real rust photograph blended in where rust gathers: the bottom of the case, pits and drips; tarnished steel, a yellowed dial, mould and grime on the glass)
 - **Mirror effect** slider: from soft, dim reflections to a crisp mirror
-- **Glass**: almost flat (slight dome), **spherical lens** (a thick, bulging crystal with real refraction that magnifies and bends the dial towards the rim), or none
+- **Glass**: almost flat (slight dome), **spherical lens** (a thick, bulging crystal with real refraction that magnifies and bends the dial towards the rim), **dome lens** (like domed wall clocks and ball clocks: a clear top whose thick outer ring bends the markers and hand tips, more so as the clock turns; adjustable *Lens edge*), or none
 - **Real depth**: the hour, minute and second hands sit at different heights above the dial and **cast soft shadows** on it and on each other. The bezel shades the edge of the dial
 - **A mild tilt / swing** of the clock towards the camera, so you see the depth of the case and the hands. It also drifts slowly across the screen to protect OLED screens
 - **The famous stop-to-go movement**: the red second hand sweeps round, **waits at 12**, then the minute impulse releases it and the minute hand **jumps** forward with a small mechanical overshoot
@@ -39,6 +39,10 @@ A screen saver for **Windows** (and **macOS**) showing the iconic Swiss railway 
 | Spherical lens glass: chrome, aged, brushed |
 |---|
 | ![](docs/lens-glass.jpg) |
+
+| Dome lens: straight on, turned, aged at full lens edge |
+|---|
+| ![](docs/dome-lens.jpg) |
 
 | Mediterranean: Mondello beach, the Colosseum, a sea cliff |
 |---|

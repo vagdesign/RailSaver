@@ -58,7 +58,7 @@ static NSString *const kSettingsKey = @"settings";
 
 // ---------------------------------------------------------------- the view
 
-@interface RailSaverClockView : ScreenSaverView <WKScriptMessageHandler>
+@interface RailSaverClockView : ScreenSaverView <WKScriptMessageHandler, WKUIDelegate>
 @property (nonatomic, strong) WKWebView *webView;
 @property (nonatomic, strong) NSWindow *sheet;
 @property (nonatomic, strong) WKWebView *sheetWebView;
@@ -150,6 +150,7 @@ static NSString *const kSettingsKey = @"settings";
     self.sheet.minSize = NSMakeSize(720, 520);
     self.sheetWebView = [[WKWebView alloc] initWithFrame:r configuration:[self configurationWithHandler:YES]];
     self.sheetWebView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    self.sheetWebView.UIDelegate = self;   // credit links open in the browser
     self.sheet.contentView = self.sheetWebView;
     NSString *version = [NSBundle bundleForClass:[self class]].infoDictionary[@"CFBundleShortVersionString"] ?: @"";
     NSString *url = [NSString stringWithFormat:@"%@://app/settings.html?version=%@", kScheme, version];
@@ -175,6 +176,14 @@ static NSString *const kSettingsKey = @"settings";
     } else if ([type isEqualToString:@"close"]) {
         [self closeSheet];
     }
+}
+
+// Links with target="_blank" (credits, GitHub) open in the default browser.
+- (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration
+   forNavigationAction:(WKNavigationAction *)action windowFeatures:(WKWindowFeatures *)features {
+    NSURL *url = action.request.URL;
+    if ([url.scheme isEqualToString:@"https"]) [[NSWorkspace sharedWorkspace] openURL:url];
+    return nil;
 }
 
 - (void)closeSheet {
