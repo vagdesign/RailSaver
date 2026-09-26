@@ -33,10 +33,10 @@ export const SKIES = {
   },
   winter: {
     label: 'Winter · cold clear sky, snowy ground',
-    zenith: [0.22, 0.36, 0.62], horizon: [0.82, 0.86, 0.92], ground: [0.85, 0.88, 0.92],
+    zenith: [0.1, 0.22, 0.52], horizon: [0.55, 0.64, 0.78], ground: [0.8, 0.84, 0.9],
     sun: [-26, 16], sunColor: [1.0, 0.9, 0.78], sunSize: 0.9, glow: 0.8,
     cover: 0.28, cloudLight: [1.2, 1.2, 1.25], cloudDark: [0.62, 0.66, 0.74], cloudScale: 0.8, wind: 0.006,
-    haze: 0.5, intensity: 1.45, light: [[0.95, 0.94, 1.0], 2.3], env: 0.9, shadowSoft: 1.3, tilt: 18,
+    haze: 0.35, intensity: 1.25, light: [[0.95, 0.94, 1.0], 2.3], env: 0.75, shadowSoft: 1.3, tilt: 18,
     particles: 'flurries',
   },
   sunset: {
