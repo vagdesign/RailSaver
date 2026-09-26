@@ -1,0 +1,16 @@
+{
+ "spring": "horn-koppe_spring",
+ "summer": "kloofendal_48d_partly_cloudy",
+ "autumn": "autumn_hill_view",
+ "winter": "snowy_field",
+ "sunset": "the_sky_is_on_fire",
+ "rain": "quarry_cloudy",
+ "snow": "snow_field",
+ "overcast": "kloofendal_overcast",
+ "night": "kloppenheim_02",
+ "railway": "bloem_train_track_cloudy",
+ "fields": "sunflowers",
+ "beach": "spiaggia_di_mondello",
+ "ruins": "colosseum",
+ "cliffs": "white_cliff_top"
+}
