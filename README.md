@@ -2,16 +2,17 @@
 
 A screen saver for **Windows** (and **macOS**) showing the iconic Swiss railway station clock as a real-time 3D model:
 
-- **Three case finishes**: *chrome / nickel* (a clean mirror), *brushed stainless* (inox, hairline grooves around the drum, polished bezel) and *aged* (rust gathering at the bottom and in pits, tarnished steel, a yellowed dial and mould and grime on the glass)
+- **Three case finishes**: *chrome / nickel* (a clean mirror), *brushed stainless* (inox, hairline grooves around the drum, polished bezel) and *aged* (a real rust photograph blended in where rust gathers: the bottom of the case, pits and drips; tarnished steel, a yellowed dial, mould and grime on the glass)
 - **Mirror effect** slider: from soft, dim reflections to a crisp mirror
-- **Glass**: almost flat (slight dome), **spherical** (a bulging crystal that bends the reflections round), or none
+- **Glass**: almost flat (slight dome), **spherical lens** (a thick, bulging crystal with real refraction that magnifies and bends the dial towards the rim), or none
 - **Real depth**: the hour, minute and second hands sit at different heights above the dial and **cast soft shadows** on it and on each other. The bezel shades the edge of the dial
 - **A mild tilt / swing** of the clock towards the camera, so you see the depth of the case and the hands. It also drifts slowly across the screen to protect OLED screens
 - **The famous stop-to-go movement**: the red second hand sweeps round, **waits at 12**, then the minute impulse releases it and the minute hand **jumps** forward with a small mechanical overshoot
 - **Sound when the second hand is released**: a synthesised solenoid clack, the minute hand landing and a short ring of the steel case. There is also an optional soft click when the hand stops at 12
 - Backgrounds: dark studio, concrete facade (the clock throws its shadow on the wall), black, and **skies**:
   spring (blossom petals), summer (blue sky with clouds), autumn (golden light, falling leaves), winter (snowy ground),
-  sunset, rainy day (rain), snowfall, overcast, night (stars, lit dial), a railway track and a sunflower field.
+  sunset, rainy day (rain), snowfall, overcast, night (stars, lit dial), a railway track, a sunflower field and
+  **Mediterranean** scenes: Mondello beach (Sicily), the Colosseum ruins (Rome) and a sea cliff.
   **Automatic** follows today's season and switches to sunset and night at the right hours (southern hemisphere option)
 - **Photographic skies**: real 360° HDR panoramas from [Poly Haven](https://polyhaven.com/hdris) (CC0). The photo behind
   the clock is shown with a soft focus, like a camera's depth of field
@@ -34,6 +35,14 @@ A screen saver for **Windows** (and **macOS**) showing the iconic Swiss railway 
 | Chrome / nickel · Brushed inox · Aged (rust, mould on a spherical glass) |
 |---|
 | ![](docs/finishes.jpg) |
+
+| Spherical lens glass: chrome, aged, brushed |
+|---|
+| ![](docs/lens-glass.jpg) |
+
+| Mediterranean: Mondello beach, the Colosseum, a sea cliff |
+|---|
+| ![](docs/mediterranean.jpg) |
 
 ![Settings with live preview](docs/settings.png)
 

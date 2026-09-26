@@ -82,6 +82,9 @@ export const SKIES = {
 // Photographic-only themes fall back to a similar generated sky.
 SKIES.railway = { ...SKIES.summer, label: 'Railway track under clouds', cover: 0.62 };
 SKIES.fields = { ...SKIES.summer, label: 'Sunflower field' };
+SKIES.beach = { ...SKIES.summer, label: 'Mediterranean beach', cover: 0.3 };
+SKIES.ruins = { ...SKIES.summer, label: 'Ancient ruins', cover: 0.2 };
+SKIES.cliffs = { ...SKIES.summer, label: 'Sea cliff', cover: 0.45 };
 
 /** 'auto': the season of today's date and, around dusk and at night, sunset / night. */
 export function autoSky(date = new Date(), southern = false) {

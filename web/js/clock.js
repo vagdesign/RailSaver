@@ -210,33 +210,72 @@ export function createClock({ caseStyle = 'station', finish = 'brushed', glassSh
   // --- glass: a crystal that shows reflections only (additive), either almost
   // flat (a slight dome) or strongly spherical, which bends the reflections
   // of the sky round like the bulging glass of old station clocks ---
-  let glassMesh = null, grimeMesh = null;
+  let glassMesh = null, grimeMesh = null, lensMat = null;
   const glassMat = track(new THREE.MeshPhysicalMaterial({
     color: 0x000000, metalness: 0, roughness: 0.02, ior: 1.52, specularIntensity: 1,
     transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, premultipliedAlpha: false,
   }));
-  if (glassShape !== 'none') {
-    const a = LIP_R - 0.002, sag = glassShape === 'dome' ? 0.19 : Z.glassSag;
+  if (glassShape === 'dome') {
+    // A thick, solid crystal: a strongly curved outer surface over a flatter
+    // inner one, with a thick rim. Real (screen-space) refraction through it
+    // bends and magnifies the dial towards the edge, like a lens.
+    const rimR = LIP_R - 0.004, rimBottom = 0.07, rimTop = 0.17, topZ = 0.34, innerTop = 0.25;
+    const pts = [];
+    const cap = (r0, z0, zTop, n, out) => {         // spherical arc from the rim (r0, z0) to the axis
+      const sag = zTop - z0, Rs = (r0 * r0 + sag * sag) / (2 * sag), zc = zTop - Rs;
+      const a0 = Math.asin(r0 / Rs);
+      for (let k = 0; k <= n; k++) {
+        const a = out ? a0 * (1 - k / n) : a0 * (k / n);
+        pts.push(new THREE.Vector2(Rs * Math.sin(a), zc + Rs * Math.cos(a)));
+      }
+    };
+    cap(rimR - 0.035, rimBottom + 0.005, innerTop, 40, false);   // inner surface, axis -> rim
+    pts.push(new THREE.Vector2(rimR - 0.012, rimBottom));
+    pts.push(new THREE.Vector2(rimR, rimBottom + 0.012));
+    pts.push(new THREE.Vector2(rimR, rimTop - 0.012));
+    pts.push(new THREE.Vector2(rimR - 0.01, rimTop));
+    cap(rimR - 0.01, rimTop, topZ, 64, true);                     // outer surface, rim -> axis
+    pts[0].x = pts[pts.length - 1].x = 0.0001;
+    const lg = track(lathe(pts, segments));
+    lensMat = track(new THREE.MeshPhysicalMaterial({
+      color: 0xffffff, metalness: 0, roughness: 0.015, transmission: 1, thickness: 0.22, ior: 1.52,
+      specularIntensity: 1, attenuationColor: new THREE.Color(0.93, 0.97, 0.95), attenuationDistance: 2.5,
+    }));
+    glassMesh = new THREE.Mesh(lg, lensMat);
+    glassMesh.renderOrder = 10;
+    group.add(glassMesh);
+    // Keep the bezel above the thick rim so the crystal sits in it.
+  } else if (glassShape !== 'none') {
+    const a = LIP_R - 0.002, sag = Z.glassSag;
     const Rs = (a * a + sag * sag) / (2 * sag);
     const theta = Math.asin(a / Rs);
-    const gg = track(new THREE.SphereGeometry(Rs, segments, glassShape === 'dome' ? 64 : 24, 0, Math.PI * 2, 0, theta));
+    const gg = track(new THREE.SphereGeometry(Rs, segments, 24, 0, Math.PI * 2, 0, theta));
     gg.rotateX(Math.PI / 2);
     gg.translate(0, 0, Z.glassEdge + sag - Rs);
     glassMesh = new THREE.Mesh(gg, glassMat);
     glassMesh.renderOrder = 10;
     group.add(glassMesh);
-    // Aged clock: mould and grime on the glass.
-    if (fin.grime) {
-      const gm = track(new THREE.MeshStandardMaterial({ map: fin.grime, transparent: true, roughness: 0.95, metalness: 0, depthWrite: false }));
-      grimeMesh = new THREE.Mesh(gg, gm);
-      grimeMesh.renderOrder = 9;
-      group.add(grimeMesh);
+  }
+  // Aged clock: mould and grime on the glass (a thin film just inside the outer surface).
+  if (glassMesh && fin.grime) {
+    const gm = track(new THREE.MeshStandardMaterial({ map: fin.grime, transparent: true, roughness: 0.95, metalness: 0, depthWrite: false }));
+    let film = glassMesh.geometry;
+    if (glassShape === 'dome') {
+      const a = LIP_R - 0.016, sag = 0.34 - 0.17 - 0.004;
+      const Rs = (a * a + sag * sag) / (2 * sag);
+      film = track(new THREE.SphereGeometry(Rs, segments, 48, 0, Math.PI * 2, 0, Math.asin(a / Rs)));
+      film.rotateX(Math.PI / 2);
+      film.translate(0, 0, 0.34 - 0.004 - Rs);
     }
+    grimeMesh = new THREE.Mesh(film, gm);
+    grimeMesh.renderOrder = 11;
+    group.add(grimeMesh);
   }
   const reflect = { glass: glassReflections, mirror };
   const applyReflections = () => {
     fin.setMirror(reflect.mirror);
-    glassMat.envMapIntensity = 1.6 * reflect.glass * (0.4 + 1.2 * reflect.mirror) * (glassShape === 'dome' ? 1.25 : 1);
+    glassMat.envMapIntensity = 1.6 * reflect.glass * (0.4 + 1.2 * reflect.mirror);
+    if (lensMat) lensMat.envMapIntensity = reflect.glass * (0.5 + 1.0 * reflect.mirror);
   };
   applyReflections();
 

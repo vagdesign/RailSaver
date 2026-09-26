@@ -3,7 +3,7 @@
 # command line tools. Usage: mac/build.sh [version]   → out/RailSaver.saver
 set -eu
 cd "$(dirname "$0")/.."
-VERSION="${1:-0.4.0}"
+VERSION="${1:-0.5.0}"
 OUT=out/RailSaver.saver
 rm -rf "$OUT"
 mkdir -p "$OUT/Contents/MacOS" "$OUT/Contents/Resources"
