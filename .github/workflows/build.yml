@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 env:
-  VERSION: 0.2.0
+  VERSION: 0.3.0
 
 jobs:
   scene:
@@ -22,6 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Photographic skies (sky-assets branch)
+        run: tools/get-skies.sh
       - name: Syntax check
         run: for f in web/js/*.js tools/*.mjs; do node --check "$f"; done
       - name: Movement tests
@@ -54,13 +56,17 @@ jobs:
           if ('${{ github.ref_type }}' -eq 'tag') { $v = '${{ github.ref_name }}'.TrimStart('v') }
           "version=$v" >> $env:GITHUB_OUTPUT
 
+      - name: Photographic skies (sky-assets branch)
+        shell: bash
+        run: tools/get-skies.sh
+
       - name: Publish (self-contained, win-x64)
         run: dotnet publish src/RailSaver/RailSaver.csproj -c Release -r win-x64 --self-contained true -p:Version=${{ steps.ver.outputs.version }} -o publish
 
       - name: Verify output
         shell: pwsh
         run: |
-          foreach ($f in 'publish/RailSaver.exe', 'publish/RailSaver.scr', 'publish/web/index.html', 'publish/web/settings.html', 'publish/web/js/main.js', 'publish/web/lib/three.module.js', 'publish/WebView2Loader.dll') {
+          foreach ($f in 'publish/RailSaver.exe', 'publish/RailSaver.scr', 'publish/web/index.html', 'publish/web/settings.html', 'publish/web/js/main.js', 'publish/web/lib/three.module.js', 'publish/WebView2Loader.dll', 'publish/web/skies/fetched.json') {
             if (!(Test-Path $f)) { throw "missing $f" }
           }
 
@@ -92,6 +98,8 @@ jobs:
           v='${{ env.VERSION }}'
           if [ '${{ github.ref_type }}' = 'tag' ]; then v='${{ github.ref_name }}'; v="${v#v}"; fi
           echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Photographic skies (sky-assets branch)
+        run: tools/get-skies.sh
       - name: Build RailSaver.saver
         run: mac/build.sh ${{ steps.ver.outputs.version }}
       - name: Check bundle

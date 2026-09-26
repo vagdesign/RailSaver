@@ -108,10 +108,17 @@
           <option value="rain">Rainy day</option>
           <option value="snow">Snowfall</option>
           <option value="overcast">Overcast</option>
-          <option value="night">Night: moon, stars, lit dial</option>
+          <option value="night">Night: stars, lit dial</option>
+          <option value="railway">Railway track under clouds</option>
+          <option value="fields">Sunflower field</option>
         </optgroup>
       </select>
-      <div class="hint">With a sky, the steel and the glass reflect it, and the clouds drift.</div></div>
+      <div class="hint">With a sky, the steel and the glass reflect it.</div></div>
+    <div class="row" id="skyStyleRow"><label for="skyStyle">Sky style</label>
+      <select id="skyStyle"><option value="photo">Photographic (360° photos)</option><option value="generated">Generated (drifting clouds)</option></select></div>
+    <div class="row" id="skyBlurRow"><label for="skyBlur">Background focus</label>
+      <div class="range"><input type="range" id="skyBlur" min="0" max="3" step="0.1"><output></output></div>
+      <div class="hint">Soft focus of the photo behind the clock, like a camera's depth of field.</div></div>
     <div class="row check" id="weatherRow"><label><input type="checkbox" id="weather">Rain, snow, petals and leaves</label></div>
     <div class="row check" id="southernRow"><label><input type="checkbox" id="southern">Southern hemisphere (for the automatic seasons)</label></div>
     <div class="row"><label for="size">Clock size</label>

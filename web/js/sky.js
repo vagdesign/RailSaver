@@ -44,7 +44,7 @@ export const SKIES = {
     zenith: [0.07, 0.09, 0.26], horizon: [0.95, 0.38, 0.12], ground: [0.05, 0.035, 0.035],
     sun: [13, 6], sunColor: [1.3, 0.5, 0.16], sunSize: 1.5, glow: 1.4,
     cover: 0.55, cloudLight: [1.5, 0.55, 0.3], cloudDark: [0.14, 0.08, 0.14], cloudScale: 0.8, wind: 0.008,
-    haze: 0.2, intensity: 1.15, light: [[1.0, 0.64, 0.4], 2.5], env: 0.8, shadowSoft: 1.5, tilt: 11,
+    haze: 0.2, intensity: 1.15, light: [[1.0, 0.64, 0.4], 2.5], env: 0.8, photoEnv: 0.3, photoLight: 1.0, photoNeutral: 0.55, shadowSoft: 1.5, tilt: 11,
   },
   rain: {
     label: 'Rainy day',
@@ -78,6 +78,10 @@ export const SKIES = {
     dialGlow: 0.85,   // the real station clocks are lit from inside at night
   },
 };
+
+// Photographic-only themes fall back to a similar generated sky.
+SKIES.railway = { ...SKIES.summer, label: 'Railway track under clouds', cover: 0.62 };
+SKIES.fields = { ...SKIES.summer, label: 'Sunflower field' };
 
 /** 'auto': the season of today's date and, around dusk and at night, sunset / night. */
 export function autoSky(date = new Date(), southern = false) {

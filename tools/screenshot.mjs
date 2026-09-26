@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', 'web');
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.css': 'text/css' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.css': 'text/css' };
 const server = http.createServer((req, res) => {
   const p = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
   if (!p.startsWith(root) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); return res.end(); }
@@ -35,7 +35,7 @@ for (const [i, q] of queries.entries()) {
   page.on('pageerror', (e) => { failed = true; console.log('[error]', e.message); });
   await page.goto(`http://localhost:${port}/index.html?capture&still&fps=2&time=10:09:36&${qs}`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.documentElement.dataset.ready === '1', null, { timeout: 180000 });
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(4000);
   const file = path.join(outDir, `${String(i).padStart(2, '0')}-${qs.replace(/[^a-z0-9=.-]+/gi, '_').slice(0, 80)}.png`);
   await page.screenshot({ path: file });
   await page.close();
