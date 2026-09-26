@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RailSaver</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  body.saver, body.saver * { cursor: none !important; }
+  #fade { position: fixed; inset: 0; background: #000; pointer-events: none; transition: opacity 1.2s ease-out; }
+  #fade.out { opacity: 0; }
+  #fps { position: fixed; left: 10px; bottom: 8px; font: 12px/1.3 ui-monospace, Consolas, monospace; color: #7f7; text-shadow: 0 0 3px #000; }
+</style>
+<script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="fps" hidden></div>
+<div id="fade"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

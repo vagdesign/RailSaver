@@ -1,0 +1,9 @@
+node_modules/
+bin/
+obj/
+publish/
+out/
+previous/
+*.user
+.vs/
+mac/build/
