@@ -1,6 +1,7 @@
 // Procedural 3D model of the Swiss railway clock. Units: the dial radius is 1.
 // The dial lies in the XY plane at z = 0, facing +Z; 12 o'clock is +Y.
 import * as THREE from 'three';
+import { createFinish } from './finishes.js';
 
 export const DIAL_R = 1.0;
 const LIP_R = 1.02;          // inner edge of the bezel (the dial's visible edge)
@@ -26,40 +27,6 @@ const RED = 0xd4151b;       // SBB red, as printed
 const BLACK = 0x0e0e0f;
 
 // ---------------------------------------------------------------- textures
-
-/** Brushed-steel streaks along U (around the case), as roughness + anisotropy maps. */
-function brushedMaps(seed = 1) {
-  const W = 8, H = 1024;
-  const rough = document.createElement('canvas'); rough.width = W; rough.height = H;
-  const aniso = document.createElement('canvas'); aniso.width = W; aniso.height = H;
-  const rc = rough.getContext('2d'), ac = aniso.getContext('2d');
-  const ri = rc.createImageData(W, H), ai = ac.createImageData(W, H);
-  let s = seed * 9301 + 49297;
-  const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-  let lo = 0.5;
-  for (let y = 0; y < H; y++) {
-    lo += (rnd() - 0.5) * 0.35; lo = Math.min(1, Math.max(0, lo));      // slow bands
-    const fine = rnd();                                                  // fine hairlines
-    const v = 0.55 * lo + 0.45 * fine;
-    for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 4;
-      const n = v + (rnd() - 0.5) * 0.04;
-      // roughness in G (three reads roughnessMap.g)
-      ri.data[i] = 255; ri.data[i + 1] = Math.round(255 * (0.55 + 0.45 * n)); ri.data[i + 2] = 255; ri.data[i + 3] = 255;
-      // anisotropy: direction (1, 0) in RG, strength in B
-      ai.data[i] = 255; ai.data[i + 1] = 128; ai.data[i + 2] = Math.round(255 * (0.55 + 0.45 * n)); ai.data[i + 3] = 255;
-    }
-  }
-  rc.putImageData(ri, 0, 0); ac.putImageData(ai, 0, 0);
-  const mk = (c) => {
-    const t = new THREE.CanvasTexture(c);
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.colorSpace = THREE.NoColorSpace;
-    t.anisotropy = 8;
-    return t;
-  };
-  return { rough: mk(rough), aniso: mk(aniso) };
-}
 
 /** Soft ambient occlusion for the dial: darker under the bezel lip and around the hub. */
 function dialAO(size) {
@@ -141,30 +108,20 @@ function markersGeometry() {
 
 // ---------------------------------------------------------------- the clock
 
-export function createClock({ caseStyle = 'station', finish = 'brushed', glass = true, glassReflections = 1, segments = 160, dialTex = 1024 } = {}) {
+export function createClock({ caseStyle = 'station', finish = 'brushed', glassShape = 'flat', glassReflections = 1, mirror = 0.6, segments = 160 } = {}) {
   const C = CASES[caseStyle] || CASES.station;
   const group = new THREE.Group();
   const disposables = [];
   const track = (x) => (disposables.push(x), x);
 
   // --- materials ---
-  const maps = brushedMaps(3);
-  track(maps.rough); track(maps.aniso);
-  const polished = finish === 'polished';
-  const steel = track(new THREE.MeshPhysicalMaterial({
-    color: 0xb4b8bd, metalness: 1, roughness: polished ? 0.16 : 0.38,
-    roughnessMap: polished ? null : maps.rough,
-    anisotropy: polished ? 0 : 0.75, anisotropyMap: polished ? null : maps.aniso,
-    envMapIntensity: 1.0,
-  }));
-  if (!polished) { maps.rough.repeat.set(1, 1); maps.aniso.repeat.set(1, 1); }
-  const bezelMat = track(new THREE.MeshPhysicalMaterial({
-    color: 0xd9dde1, metalness: 1, roughness: 0.11, clearcoat: 0.4, clearcoatRoughness: 0.08, envMapIntensity: 1.1,
-  }));
-  const innerMat = track(new THREE.MeshStandardMaterial({ color: 0x9a9ea3, metalness: 1, roughness: 0.3 }));
+  const fin = createFinish(finish === 'polished' ? 'chrome' : finish);
+  disposables.push(fin);
+  const steel = fin.body, bezelMat = fin.bezel, innerMat = fin.inner;
+  const arborMat = track(new THREE.MeshStandardMaterial({ color: 0x9a9ea3, metalness: 1, roughness: 0.3 }));
   const ao = track(dialAO(512));
   const dialMat = track(new THREE.MeshPhysicalMaterial({
-    color: 0xf4f4f1, roughness: 0.62, metalness: 0, aoMap: ao, aoMapIntensity: 1, sheen: 0.0,
+    color: fin.dialTint || 0xf4f4f1, roughness: 0.62, metalness: 0, aoMap: ao, aoMapIntensity: 1, sheen: 0.0,
     specularIntensity: 0.35,
   }));
   const printMat = track(new THREE.MeshStandardMaterial({ color: BLACK, roughness: 0.72, metalness: 0 }));
@@ -240,7 +197,7 @@ export function createClock({ caseStyle = 'station', finish = 'brushed', glass =
   second.position.z = Z.second;
 
   // Arbor: a short steel post through the hubs.
-  const arbor = new THREE.Mesh(track(new THREE.CylinderGeometry(0.014, 0.018, Z.second + 0.014, 24)), innerMat);
+  const arbor = new THREE.Mesh(track(new THREE.CylinderGeometry(0.014, 0.018, Z.second + 0.014, 24)), arborMat);
   arbor.rotation.x = Math.PI / 2;
   arbor.position.z = (Z.second + 0.014) / 2;
   arbor.castShadow = true;
@@ -250,24 +207,38 @@ export function createClock({ caseStyle = 'station', finish = 'brushed', glass =
   cap.castShadow = true;
   group.add(hour, minute, second, arbor, cap);
 
-  // --- glass: a slightly domed crystal that shows reflections only ---
-  let glassMesh = null;
-  if (glass) {
-    const a = LIP_R - 0.002, sag = Z.glassSag;
+  // --- glass: a crystal that shows reflections only (additive), either almost
+  // flat (a slight dome) or strongly spherical, which bends the reflections
+  // of the sky round like the bulging glass of old station clocks ---
+  let glassMesh = null, grimeMesh = null;
+  const glassMat = track(new THREE.MeshPhysicalMaterial({
+    color: 0x000000, metalness: 0, roughness: 0.02, ior: 1.52, specularIntensity: 1,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, premultipliedAlpha: false,
+  }));
+  if (glassShape !== 'none') {
+    const a = LIP_R - 0.002, sag = glassShape === 'dome' ? 0.19 : Z.glassSag;
     const Rs = (a * a + sag * sag) / (2 * sag);
     const theta = Math.asin(a / Rs);
-    const gg = track(new THREE.SphereGeometry(Rs, segments, 24, 0, Math.PI * 2, 0, theta));
+    const gg = track(new THREE.SphereGeometry(Rs, segments, glassShape === 'dome' ? 64 : 24, 0, Math.PI * 2, 0, theta));
     gg.rotateX(Math.PI / 2);
     gg.translate(0, 0, Z.glassEdge + sag - Rs);
-    const glassMat = track(new THREE.MeshPhysicalMaterial({
-      color: 0x000000, metalness: 0, roughness: 0.03, ior: 1.52, specularIntensity: 1,
-      envMapIntensity: 1.6 * glassReflections, transparent: true, blending: THREE.AdditiveBlending,
-      depthWrite: false, premultipliedAlpha: false,
-    }));
     glassMesh = new THREE.Mesh(gg, glassMat);
     glassMesh.renderOrder = 10;
     group.add(glassMesh);
+    // Aged clock: mould and grime on the glass.
+    if (fin.grime) {
+      const gm = track(new THREE.MeshStandardMaterial({ map: fin.grime, transparent: true, roughness: 0.95, metalness: 0, depthWrite: false }));
+      grimeMesh = new THREE.Mesh(gg, gm);
+      grimeMesh.renderOrder = 9;
+      group.add(grimeMesh);
+    }
   }
+  const reflect = { glass: glassReflections, mirror };
+  const applyReflections = () => {
+    fin.setMirror(reflect.mirror);
+    glassMat.envMapIntensity = 1.6 * reflect.glass * (0.4 + 1.2 * reflect.mirror) * (glassShape === 'dome' ? 1.25 : 1);
+  };
+  applyReflections();
 
   return {
     group,
@@ -282,7 +253,9 @@ export function createClock({ caseStyle = 'station', finish = 'brushed', glass =
     },
     /** Lit dial (night): the dial glows from inside like the real station clocks. */
     setDialGlow(v) { dialMat.emissive.setRGB(1, 0.97, 0.9); dialMat.emissiveIntensity = v; },
-    setGlassReflections(v) { if (glassMesh) glassMesh.material.envMapIntensity = 1.6 * v; },
+    setGlassReflections(v) { reflect.glass = v; applyReflections(); },
+    /** How mirror-like the metal (and the glass) is, 0..1. */
+    setMirror(v) { reflect.mirror = v; applyReflections(); },
     dispose() {
       for (const d of disposables) d.dispose();
     },

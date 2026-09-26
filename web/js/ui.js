@@ -9,6 +9,7 @@ const status = document.getElementById('status');
 
 const fmt = {
   glassReflections: (v) => `${Math.round(v * 100)}%`,
+  mirror: (v) => `${Math.round(v * 100)}%`,
   stopSeconds: (v) => (v === 0 ? 'off' : `${v.toFixed(1)} s`),
   volume: (v) => `${Math.round(v * 100)}%`,
   size: (v) => `${Math.round(v * 100)}%`,
@@ -35,7 +36,7 @@ function show() {
     `Shadows ${q.shadow}px, ${q.segments} segments, reflections ${q.env}px${q.pixel < 1 ? `, ${Math.round(q.pixel * 100)}% resolution` : ''}.`;
   document.getElementById('volume').disabled = !settings.sound;
   document.getElementById('latchClick').disabled = !settings.sound;
-  document.getElementById('glassReflections').disabled = !settings.glass;
+  document.getElementById('glassReflections').disabled = settings.glassShape === 'none';
   const skyBg = !['studio', 'wall', 'black'].includes(settings.background);
   document.getElementById('weatherRow').hidden = !skyBg;
   document.getElementById('skyStyleRow').hidden = !skyBg;

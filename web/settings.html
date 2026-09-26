@@ -65,6 +65,7 @@
     <button data-preset="saver">Power saver<small>Laptops, integrated GPUs</small></button>
     <button data-preset="seasons">Seasons<small>Sky follows the date &amp; hour</small></button>
     <button data-preset="rainy">Rainy day<small>Rain, soft light</small></button>
+    <button data-preset="vintage">Vintage<small>Aged steel, spherical glass</small></button>
   </div>
 
   <details open>
@@ -72,8 +73,12 @@
     <div class="row"><label for="caseStyle">Case</label>
       <select id="caseStyle"><option value="station">Station clock (deep drum)</option><option value="wall">Wall clock (slim)</option></select></div>
     <div class="row"><label for="finish">Steel finish</label>
-      <select id="finish"><option value="brushed">Brushed stainless</option><option value="polished">Polished stainless</option></select></div>
-    <div class="row check"><label><input type="checkbox" id="glass">Glass crystal</label></div>
+      <select id="finish"><option value="chrome">Chrome / nickel (mirror)</option><option value="brushed">Brushed stainless (inox)</option><option value="aged">Aged: rust, mould on the glass</option></select></div>
+    <div class="row"><label for="mirror">Mirror effect</label>
+      <div class="range"><input type="range" id="mirror" min="0" max="1" step="0.05"><output></output></div>
+      <div class="hint">How strongly and sharply the metal reflects the surroundings.</div></div>
+    <div class="row"><label for="glassShape">Glass</label>
+      <select id="glassShape"><option value="flat">Flat (slight dome)</option><option value="dome">Spherical (bulging)</option><option value="none">No glass</option></select></div>
     <div class="row"><label for="glassReflections">Glass reflections</label>
       <div class="range"><input type="range" id="glassReflections" min="0" max="2" step="0.05"><output></output></div></div>
   </details>

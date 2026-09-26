@@ -2,8 +2,9 @@
 
 A screen saver for **Windows** (and **macOS**) showing the iconic Swiss railway station clock as a real-time 3D model:
 
-- **Stainless steel case**, brushed or polished, with a rounded chrome bezel, reflecting a studio lighting environment
-- **Domed glass** that catches reflections as the clock turns
+- **Three case finishes**: *chrome / nickel* (a clean mirror), *brushed stainless* (inox, hairline grooves around the drum, polished bezel) and *aged* (rust gathering at the bottom and in pits, tarnished steel, a yellowed dial and mould and grime on the glass)
+- **Mirror effect** slider: from soft, dim reflections to a crisp mirror
+- **Glass**: almost flat (slight dome), **spherical** (a bulging crystal that bends the reflections round), or none
 - **Real depth**: the hour, minute and second hands sit at different heights above the dial and **cast soft shadows** on it and on each other. The bezel shades the edge of the dial
 - **A mild tilt / swing** of the clock towards the camera, so you see the depth of the case and the hands. It also drifts slowly across the screen to protect OLED screens
 - **The famous stop-to-go movement**: the red second hand sweeps round, **waits at 12**, then the minute impulse releases it and the minute hand **jumps** forward with a small mechanical overshoot
@@ -30,6 +31,10 @@ A screen saver for **Windows** (and **macOS**) showing the iconic Swiss railway 
 | **Rainy day** | **Snowfall** | **Night** | **Railway track** | **Sunflower field** |
 | ![](docs/sky-rain.jpg) | ![](docs/sky-snow.jpg) | ![](docs/sky-night.jpg) | ![](docs/sky-railway.jpg) | ![](docs/sky-fields.jpg) |
 
+| Chrome / nickel · Brushed inox · Aged (rust, mould on a spherical glass) |
+|---|
+| ![](docs/finishes.jpg) |
+
 ![Settings with live preview](docs/settings.png)
 
 ## Install (Windows 10/11)
@@ -52,7 +57,7 @@ Unzip `RailSaver-mac-x.y.z.zip` and double-click `RailSaver.saver`, then choose 
 
 | Group | Settings |
 |---|---|
-| Clock | Case: *station* (deep drum) or *wall* (slim) · brushed / polished steel · glass on/off · glass reflection strength |
+| Clock | Case: *station* (deep drum) or *wall* (slim) · finish: chrome / brushed inox / aged · **mirror effect** · glass: flat / spherical / none · glass reflection strength |
 | Movement & sound | **Stop at 12** (0–8 s; default 6 s, the real clocks use 1.5 s, 0 = continuous sweep) · mechanical minute jump · release sound and volume · soft click at 12 · *Play the release sound* button |
 | Camera & scene | Background (studio, facade, black, 12 skies incl. automatic seasons) · sky style (photographic / generated) · background focus · weather particles · clock size · **tilt/swing amount** and cycle length · light angle (longer or shorter hand shadows) · brightness · drift |
 | Performance | Quality *Low / Medium / High / Ultra* · anti-aliasing · frame rate · render scale · monitors (all / primary only) · battery saver · show FPS |
@@ -70,7 +75,8 @@ Windows stores the settings in `%APPDATA%\RailSaver\settings.json` and the log i
 
 ```
 web/                       the clock (Three.js / WebGL 2), shared by every platform
- ├─ js/clock.js            procedural model: lathe-turned case & bezel, dial, extruded hands, domed glass
+ ├─ js/clock.js            procedural model: lathe-turned case & bezel, dial, extruded hands, flat or spherical glass
+ ├─ js/finishes.js         chrome, brushed inox and aged steel (rust, glass mould), all textures generated
  ├─ js/stage.js            studio reflection environment, backdrop, concrete wall
  ├─ js/photosky.js         photographic skies: .hdr reader, background lens, HDR reflections, sun alignment
  ├─ js/sky.js              generated skies (clouds, sun, moon, stars), sky presets, automatic seasons

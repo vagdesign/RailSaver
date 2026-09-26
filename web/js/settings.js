@@ -6,9 +6,10 @@
 export const DEFAULTS = {
   // --- clock ---
   caseStyle: 'station',   // 'station' (deep drum, like the platform clocks) | 'wall' (slim case)
-  finish: 'brushed',      // 'brushed' | 'polished' stainless steel
-  glass: true,
+  finish: 'brushed',      // 'chrome' (chrome / nickel mirror) | 'brushed' (inox) | 'aged' (rust, mould on the glass)
+  glassShape: 'flat',     // 'flat' (slight dome) | 'dome' (spherical) | 'none'
   glassReflections: 1.0,  // strength of reflections on the glass, 0..2
+  mirror: 0.6,            // how mirror-like the metal is, 0 (soft) .. 1 (crisp mirror)
   stopSeconds: 6,         // how long the second hand waits at 12 (the real clock: 1.5 s)
   minuteJump: true,       // animated minute-hand jump with a mechanical overshoot
   // --- camera & scene ---
@@ -50,6 +51,7 @@ export const QUALITY = {
 export const PRESETS = {
   showcase: { quality: 'ultra', antialias: 8, fps: 60, renderScale: 1, swing: 0.6, background: 'studio', caseStyle: 'station' },
   authentic: { stopSeconds: 1.5, minuteJump: true, swing: 0.35, background: 'wall', caseStyle: 'station', finish: 'brushed' },
+  vintage: { finish: 'aged', glassShape: 'dome', mirror: 0.35, background: 'overcast', stopSeconds: 1.5 },
   balanced: { quality: 'high', antialias: 4, fps: 60, renderScale: 1 },
   saver: { quality: 'low', antialias: 2, fps: 30, renderScale: 0.85, batterySaver: true },
   seasons: { background: 'auto', weather: true, swing: 0.5, caseStyle: 'station' },
@@ -68,6 +70,9 @@ export function mergeSettings(base, patch) {
     else out[k] = String(v);
   }
   if (!QUALITY[out.quality]) out.quality = DEFAULTS.quality;
+  // Older settings files.
+  if (out.finish === 'polished') out.finish = 'chrome';
+  if (patch && patch.glass === false && !('glassShape' in patch)) out.glassShape = 'none';
   out.stopSeconds = Math.min(10, Math.max(0, out.stopSeconds));
   return out;
 }
