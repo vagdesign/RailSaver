@@ -12,7 +12,10 @@ export const DEFAULTS = {
   stopSeconds: 6,         // how long the second hand waits at 12 (the real clock: 1.5 s)
   minuteJump: true,       // animated minute-hand jump with a mechanical overshoot
   // --- camera & scene ---
-  background: 'studio',   // 'studio' | 'wall' | 'sky' | 'black'
+  background: 'studio',   // 'studio' | 'wall' | 'black' | a sky: 'auto' | 'summer' | 'spring' | 'autumn' |
+                          // 'winter' | 'sunset' | 'rain' | 'snow' | 'overcast' | 'night'  (see sky.js)
+  weather: true,          // rain, snow, petals and leaves with the skies that have them
+  southern: false,        // 'auto' sky: southern-hemisphere seasons
   size: 0.78,             // clock diameter as a fraction of the screen's shorter side
   swing: 0.5,             // amount of tilt/swing, 0..1
   swingSeconds: 40,       // seconds per swing cycle
@@ -47,6 +50,8 @@ export const PRESETS = {
   authentic: { stopSeconds: 1.5, minuteJump: true, swing: 0.35, background: 'wall', caseStyle: 'station', finish: 'brushed' },
   balanced: { quality: 'high', antialias: 4, fps: 60, renderScale: 1 },
   saver: { quality: 'low', antialias: 2, fps: 30, renderScale: 0.85, batterySaver: true },
+  seasons: { background: 'auto', weather: true, swing: 0.5, caseStyle: 'station' },
+  rainy: { background: 'rain', weather: true, swing: 0.4, caseStyle: 'station' },
 };
 
 const NUMERIC = Object.keys(DEFAULTS).filter((k) => typeof DEFAULTS[k] === 'number');

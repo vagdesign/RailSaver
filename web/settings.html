@@ -63,6 +63,8 @@
     <button data-preset="authentic">Authentic<small>1.5 s stop, facade</small></button>
     <button data-preset="balanced">Balanced<small>High quality, 60 fps</small></button>
     <button data-preset="saver">Power saver<small>Laptops, integrated GPUs</small></button>
+    <button data-preset="seasons">Seasons<small>Sky follows the date &amp; hour</small></button>
+    <button data-preset="rainy">Rainy day<small>Rain, soft light</small></button>
   </div>
 
   <details open>
@@ -92,7 +94,26 @@
   <details open>
     <summary>Camera &amp; scene</summary>
     <div class="row"><label for="background">Background</label>
-      <select id="background"><option value="studio">Dark studio</option><option value="wall">Concrete facade</option><option value="sky">Overcast sky</option><option value="black">Black</option></select></div>
+      <select id="background">
+        <optgroup label="Studio">
+          <option value="studio">Dark studio</option><option value="wall">Concrete facade</option><option value="black">Black</option>
+        </optgroup>
+        <optgroup label="Skies">
+          <option value="auto">Automatic: today's season &amp; time of day</option>
+          <option value="spring">Spring: soft sky, blossom petals</option>
+          <option value="summer">Summer: blue sky with clouds</option>
+          <option value="autumn">Autumn: golden afternoon, falling leaves</option>
+          <option value="winter">Winter: cold clear sky, snowy ground</option>
+          <option value="sunset">Sunset</option>
+          <option value="rain">Rainy day</option>
+          <option value="snow">Snowfall</option>
+          <option value="overcast">Overcast</option>
+          <option value="night">Night: moon, stars, lit dial</option>
+        </optgroup>
+      </select>
+      <div class="hint">With a sky, the steel and the glass reflect it, and the clouds drift.</div></div>
+    <div class="row check" id="weatherRow"><label><input type="checkbox" id="weather">Rain, snow, petals and leaves</label></div>
+    <div class="row check" id="southernRow"><label><input type="checkbox" id="southern">Southern hemisphere (for the automatic seasons)</label></div>
     <div class="row"><label for="size">Clock size</label>
       <div class="range"><input type="range" id="size" min="0.4" max="0.95" step="0.01"><output></output></div></div>
     <div class="row"><label for="swing">Tilt / swing</label>

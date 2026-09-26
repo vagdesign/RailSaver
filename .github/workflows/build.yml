@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 env:
-  VERSION: 0.1.0
+  VERSION: 0.2.0
 
 jobs:
   scene:
@@ -31,7 +31,7 @@ jobs:
           npm install --no-save playwright@1.56.1
           npx playwright install --with-deps chromium
       - name: Render previews
-        run: node tools/screenshot.mjs previews "background=studio&drift=0&swing=1&swingPhase=0.25" "background=wall&drift=0&swing=1&swingPhase=0.7" "background=sky&drift=0" "caseStyle=wall&finish=polished&drift=0@1080x1350"
+        run: node tools/screenshot.mjs previews "background=studio&drift=0&swing=1&swingPhase=0.25" "background=wall&drift=0&swing=1&swingPhase=0.7" "background=sky&drift=0" "caseStyle=wall&finish=polished&drift=0@1080x1350" "background=summer&drift=0" "background=sunset&drift=0" "background=rain&drift=0" "background=snow&drift=0" "background=night&drift=0"
       - uses: actions/upload-artifact@v4
         with:
           name: previews

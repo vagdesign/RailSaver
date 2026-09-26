@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { DEFAULTS, QUALITY, mergeSettings, settingsFromQuery, loadStored, postToHost, hostKind } from './settings.js';
 import { createClock } from './clock.js';
 import { createEnvironment, createBackdrop, createWall, BACKGROUNDS } from './stage.js';
+import { Sky, SKIES, autoSky, skyLight } from './sky.js';
+import { Weather } from './weather.js';
 import { handAngles, nextEvents } from './motion.js';
 import { ClockAudio } from './audio.js';
 
@@ -59,27 +61,61 @@ scene.add(fill);
 
 // Everything that depends on settings is (re)built here.
 let clock = null, backdrop = null, wall = null, envRT = null, built = {};
+let sky = null, weather = null, skyName = null, envAge = 0;
+const pmrem = new THREE.PMREMGenerator(renderer);
+
+/** The sky preset in use, or null for the studio / wall / black backgrounds. */
+function currentSky() {
+  const bg = settings.background === 'sky' ? 'overcast' : settings.background;
+  if (bg === 'auto') return autoSky(new Date(wallNow()), settings.southern);
+  return SKIES[bg] ? bg : null;
+}
+
+function refreshEnvironment() {
+  const q = QUALITY[settings.quality];
+  const old = envRT;
+  envRT = skyName
+    ? pmrem.fromScene(sky.envScene, 0, 0.1, 100, { size: q.env })
+    : createEnvironment(renderer, settings.background === 'wall' ? 'wall' : 'studio', q.env);
+  scene.environment = envRT.texture;
+  if (old) old.dispose();
+  envAge = 0;
+}
+
 function build() {
   const q = QUALITY[settings.quality];
-  const need = { quality: settings.quality, caseStyle: settings.caseStyle, finish: settings.finish, glass: settings.glass, background: settings.background };
+  skyName = currentSky();
+  const need = {
+    quality: settings.quality, caseStyle: settings.caseStyle, finish: settings.finish, glass: settings.glass,
+    background: skyName || settings.background, weather: settings.weather && skyName ? SKIES[skyName].particles || null : null,
+  };
   const same = (k) => built[k] === need[k];
 
-  if (!same('quality') || !same('background') || !envRT) {
-    if (envRT) envRT.dispose();
-    envRT = createEnvironment(renderer, settings.background === 'black' ? 'studio' : settings.background, q.env);
-    scene.environment = envRT.texture;
-  }
   if (!clock || !same('quality') || !same('caseStyle') || !same('finish') || !same('glass')) {
     if (clock) { scene.remove(clock.group); clock.dispose(); }
     clock = createClock({ caseStyle: settings.caseStyle, finish: settings.finish, glass: settings.glass, glassReflections: settings.glassReflections, segments: q.segments });
     scene.add(clock.group);
     if (wall) wall.position.z = clock.back - 0.002;
   }
-  if (!same('background')) {
+  if (!same('background') || !same('quality')) {
     if (backdrop) { scene.remove(backdrop); backdrop.geometry.dispose(); backdrop.material.dispose(); backdrop = null; }
     if (wall) { scene.remove(wall); wall.userData.dispose(); wall = null; }
-    if (settings.background === 'wall') { wall = createWall(clock.back); scene.add(wall); }
+    if (sky) { scene.remove(sky.mesh); sky.dispose(); sky = null; }
+    if (skyName) {
+      sky = new Sky(settings.quality === 'low' ? 3 : 5);
+      sky.set(skyName);
+      sky.update(animTime());
+      scene.add(sky.mesh);
+    } else if (settings.background === 'wall') { wall = createWall(clock.back); scene.add(wall); }
     else { backdrop = createBackdrop(settings.background); scene.add(backdrop); }
+    refreshEnvironment();
+  }
+  if (!same('weather') || !same('quality')) {
+    if (weather) { scene.remove(weather.group); weather.dispose(); weather = null; }
+    if (need.weather) {
+      weather = new Weather(need.weather, { low: 0.4, medium: 0.7, high: 1, ultra: 1.3 }[settings.quality]);
+      scene.add(weather.group);
+    }
   }
   // Shadows: map size and softness from quality; the shadow camera tightly
   // wraps the clock (and a patch of wall) for maximum texel density.
@@ -88,18 +124,28 @@ function build() {
     key.shadow.mapSize.set(size, size);
     if (key.shadow.map) { key.shadow.map.dispose(); key.shadow.map = null; }
   }
-  key.shadow.radius = q.radius;
-  const ext = settings.background === 'wall' ? 2.6 : 1.3;
+  const preset = skyName ? SKIES[skyName] : null;
+  key.shadow.radius = q.radius * (preset ? preset.shadowSoft : 1);
+  const ext = settings.background === 'wall' && !skyName ? 2.6 : 1.3;
   Object.assign(key.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext, near: 1, far: 30 });
   key.shadow.camera.updateProjectionMatrix();
 
-  const bg = BACKGROUNDS[settings.background] || BACKGROUNDS.studio;
   const a = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(settings.lightAngle, 10, 70));
   key.position.set(-Math.sin(a) * 0.62, Math.sin(a) * 0.78, Math.cos(a)).multiplyScalar(12);
-  key.intensity = bg.light;
-  scene.environmentIntensity = bg.env;
+  if (preset) {
+    const l = skyLight(preset);
+    key.color.copy(l.color);
+    key.intensity = l.intensity;
+    scene.environmentIntensity = preset.env;
+  } else {
+    const bg = BACKGROUNDS[settings.background] || BACKGROUNDS.studio;
+    key.color.set(0xfffaf2);
+    key.intensity = bg.light;
+    scene.environmentIntensity = bg.env;
+  }
   renderer.toneMappingExposure = settings.exposure;
   clock.setGlassReflections(settings.glassReflections);
+  clock.setDialGlow(preset && preset.dialGlow ? preset.dialGlow : 0);
   built = need;
   resize();
 }
@@ -142,7 +188,7 @@ function resize() {
     rt.texture.colorSpace = THREE.LinearSRGBColorSpace;
   }
   out.material.uniforms.tScene.value = rt.texture;
-  out.material.uniforms.uVignette.value = settings.background === 'sky' ? 0.08 : 0.2;
+  out.material.uniforms.uVignette.value = skyName ? 0.1 : 0.2;
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
   if (backdrop) backdrop.material.uniforms.uAspect.value = width / height;
@@ -243,7 +289,7 @@ if (mode === 'screensaver') {
 
 // ---- main loop ----
 const fpsEl = document.getElementById('fps');
-let lastRender = 0, frames = 0, totalFrames = 0, fpsT = performance.now();
+let lastRender = 0, frames = 0, totalFrames = 0, fpsT = performance.now(), lastT = 0, autoCheck = 0;
 function frame(now) {
   if (paused) return;
   requestAnimationFrame(frame);
@@ -252,9 +298,21 @@ function frame(now) {
   lastRender = now;
 
   const t = wallNow();
+  const at = animTime();
+  const dt = lastT ? (now - lastT) / 1000 : 0;
+  lastT = now;
   clock.setAngles(handAngles(t, settings));
   scheduleSounds(t);
-  placeCamera(animTime());
+  placeCamera(at);
+  if (sky) {
+    sky.update(at);
+    // Clouds move: refresh the reflections now and then (not on Low).
+    envAge += dt;
+    if (settings.quality !== 'low' && envAge > (settings.quality === 'ultra' ? 1.5 : 4)) refreshEnvironment();
+  }
+  if (weather) weather.update(frozenAt !== null ? 0 : dt, at);
+  // 'auto' follows the season and the time of day.
+  if (settings.background === 'auto' && (autoCheck += dt) > 30) { autoCheck = 0; if (currentSky() !== skyName) build(); }
 
   renderer.setRenderTarget(rt);
   renderer.render(scene, camera);
