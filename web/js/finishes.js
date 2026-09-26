@@ -68,10 +68,30 @@ function brushedTextures() {
 
 // ---------------------------------------------------------------- aged steel
 
+// The rust photograph (web/textures/rust.jpg), decoded once into pixels.
+let rustPhoto = null;
+function loadRustPhoto() {
+  if (!rustPhoto) {
+    rustPhoto = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+        const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+        resolve({ w: c.width, h: c.height, data: g.getImageData(0, 0, c.width, c.height).data });
+      };
+      img.onerror = () => resolve(null);
+      img.src = 'textures/rust.jpg';
+    });
+  }
+  return rustPhoto;
+}
+
 /**
- * Rust: blotches that gather at the bottom of the case (where water runs and
- * stays), along edges, and in pits. Returns colour (sRGB), roughness/metalness
- * (G/B) and a bump map.
+ * Rust: gathers at the bottom of the case (where water runs and stays), in
+ * pits and in drips. Where it is, the rust photograph shows through: its
+ * orange rust is rough and dull, its grey-blue scale half metallic. Returns
+ * colour (sRGB), roughness/metalness (G/B) and a bump map; drawn procedurally
+ * first, then again with the photo once it has loaded.
  */
 function agedTextures(amount = 1) {
   const W = 1024, H = 512;
@@ -84,42 +104,58 @@ function agedTextures(amount = 1) {
       const bottom = 0.5 + 0.5 * Math.cos(2 * Math.PI * u);           // 1 at 6 o'clock
       const blot = fbm(n1, u * 14, v * 7, 5);
       const pits = n3(u * 180, v * 90);
-      // Drips: rust running down from the bottom half (stretched noise).
-      const drip = fbm(n2, u * 60, v * 3, 3);
+      const drip = fbm(n2, u * 60, v * 3, 3);                          // rust running down
       let m = smooth(0.56 - 0.3 * bottom * amount, 0.72 - 0.26 * bottom * amount, blot);
       m = Math.max(m, smooth(0.8, 0.95, pits) * 0.8 * amount);
       m = Math.max(m, smooth(0.66, 0.8, drip) * bottom * 0.9 * amount);
       mask[y * W + x] = Math.min(1, m);
     }
   }
-  const color = canvasTexture(W, H, (d) => {
-    for (let i = 0; i < W * H; i++) {
-      const m = mask[i];
-      const t = n2((i % W) * 0.08, Math.floor(i / W) * 0.08);
-      // Tarnished steel -> dark rust -> orange rust.
-      const steel = [150 + 20 * t, 150 + 18 * t, 145 + 12 * t];
-      const dark = [62, 36, 24], orange = [128, 66, 30];
-      const k = smooth(0.4, 1, m * (0.7 + 0.6 * t));
-      const rust = dark.map((c, j) => c + (orange[j] - c) * k);
-      for (let j = 0; j < 3; j++) d[i * 4 + j] = steel[j] + (rust[j] - steel[j]) * smooth(0.05, 0.45, m);
-      d[i * 4 + 3] = 255;
+  const color = canvasTexture(W, H, () => {}, { srgb: true });
+  const orm = canvasTexture(W, H, () => {});
+  const bump = canvasTexture(W, H, () => {});
+
+  const paint = (photo) => {
+    const cd = new Uint8ClampedArray(W * H * 4), od = new Uint8ClampedArray(W * H * 4), bd = new Uint8ClampedArray(W * H * 4);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x, m = mask[i];
+        const t = n2(x * 0.08, y * 0.08);
+        const steel = [150 + 20 * t, 150 + 18 * t, 145 + 12 * t];
+        let rust, rr, lum;
+        if (photo) {
+          // Mirror-tile the photo twice around the case so its ends meet invisibly.
+          let px = (x / W) * 2; px = px > 1 ? 2 - px : px;
+          const sx = Math.min(photo.w - 1, Math.floor(px * (photo.w - 1)));
+          const sy = Math.min(photo.h - 1, Math.floor((y / H) * (photo.h - 1)));
+          const k = (sy * photo.w + sx) * 4;
+          rust = [photo.data[k], photo.data[k + 1], photo.data[k + 2]];
+          rr = smooth(0, 70, rust[0] - rust[2]);                        // orange rust vs grey-blue scale
+          lum = (rust[0] + rust[1] + rust[2]) / 765;
+        } else {
+          const dark = [62, 36, 24], orange = [128, 66, 30];
+          const k = smooth(0.4, 1, m * (0.7 + 0.6 * t));
+          rust = dark.map((c, j) => c + (orange[j] - c) * k);
+          rr = 1; lum = 0.3 + 0.4 * k;
+        }
+        const a = photo ? smooth(0.02, 0.35, m) : smooth(0.05, 0.45, m);
+        for (let j = 0; j < 3; j++) cd[i * 4 + j] = steel[j] + (rust[j] - steel[j]) * a;
+        cd[i * 4 + 3] = 255;
+        od[i * 4] = 255;
+        od[i * 4 + 1] = (0.42 + a * (0.2 + 0.35 * rr)) * 255;           // roughness
+        od[i * 4 + 2] = (1 - a * (0.45 + 0.45 * rr)) * 255;             // metalness
+        od[i * 4 + 3] = 255;
+        const b = a * (0.35 + 0.65 * lum) * (0.7 + 0.3 * n3(x * 0.5, y * 0.5));
+        bd[i * 4] = bd[i * 4 + 1] = bd[i * 4 + 2] = b * 255; bd[i * 4 + 3] = 255;
+      }
     }
-  }, { srgb: true });
-  const orm = canvasTexture(W, H, (d) => {
-    for (let i = 0; i < W * H; i++) {
-      const m = smooth(0.05, 0.5, mask[i]);
-      d[i * 4] = 255;
-      d[i * 4 + 1] = (0.42 + 0.5 * m) * 255;    // roughness (tarnished steel -> rust)
-      d[i * 4 + 2] = (1 - 0.85 * m) * 255;      // metalness
-      d[i * 4 + 3] = 255;
+    for (const [tex, data] of [[color, cd], [orm, od], [bump, bd]]) {
+      tex.image.getContext('2d').putImageData(new ImageData(data, W, H), 0, 0);
+      tex.needsUpdate = true;
     }
-  });
-  const bump = canvasTexture(W, H, (d) => {
-    for (let i = 0; i < W * H; i++) {
-      const b = mask[i] * (0.6 + 0.4 * n3((i % W) * 0.5, Math.floor(i / W) * 0.5));
-      d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = b * 255; d[i * 4 + 3] = 255;
-    }
-  });
+  };
+  paint(null);
+  loadRustPhoto().then((photo) => { if (photo) paint(photo); });
   return { color, orm, bump };
 }
 
@@ -168,7 +204,7 @@ export function createFinish(finish) {
     inner = M(new THREE.MeshStandardMaterial({ metalness: 1, roughness: 0.12 }));
     inner.color.setRGB(0.5, 0.5, 0.5);
   } else if (finish === 'aged') {
-    const t = agedTextures(1);
+    const t = agedTextures(1.15);
     T(t.color); T(t.orm); T(t.bump);
     body = M(new THREE.MeshPhysicalMaterial({
       map: t.color, roughnessMap: t.orm, metalnessMap: t.orm, roughness: 1, metalness: 1,

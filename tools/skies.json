@@ -1,13 +1,44 @@
 {
-  "spring":   { "polyhaven": "horn-koppe_spring" },
-  "summer":   { "polyhaven": "kloofendal_48d_partly_cloudy" },
-  "autumn":   { "polyhaven": "autumn_hill_view" },
-  "winter":   { "polyhaven": "snowy_field" },
-  "sunset":   { "polyhaven": "the_sky_is_on_fire" },
-  "rain":     { "polyhaven": "quarry_cloudy" },
-  "snow":     { "polyhaven": "snow_field" },
-  "overcast": { "polyhaven": "kloofendal_overcast" },
-  "night":    { "polyhaven": "kloppenheim_02" },
-  "railway":  { "polyhaven": "bloem_train_track_cloudy" },
-  "fields":   { "polyhaven": "sunflowers" }
+  "spring": {
+    "polyhaven": "horn-koppe_spring"
+  },
+  "summer": {
+    "polyhaven": "kloofendal_48d_partly_cloudy"
+  },
+  "autumn": {
+    "polyhaven": "autumn_hill_view"
+  },
+  "winter": {
+    "polyhaven": "snowy_field"
+  },
+  "sunset": {
+    "polyhaven": "the_sky_is_on_fire"
+  },
+  "rain": {
+    "polyhaven": "quarry_cloudy"
+  },
+  "snow": {
+    "polyhaven": "snow_field"
+  },
+  "overcast": {
+    "polyhaven": "kloofendal_overcast"
+  },
+  "night": {
+    "polyhaven": "kloppenheim_02"
+  },
+  "railway": {
+    "polyhaven": "bloem_train_track_cloudy"
+  },
+  "fields": {
+    "polyhaven": "sunflowers"
+  },
+  "beach": {
+    "polyhaven": "spiaggia_di_mondello"
+  },
+  "ruins": {
+    "polyhaven": "colosseum"
+  },
+  "cliffs": {
+    "polyhaven": "white_cliff_top"
+  }
 }
