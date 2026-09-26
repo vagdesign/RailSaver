@@ -10,6 +10,7 @@ const status = document.getElementById('status');
 const fmt = {
   glassReflections: (v) => `${Math.round(v * 100)}%`,
   mirror: (v) => `${Math.round(v * 100)}%`,
+  lensStrength: (v) => `${Math.round(v * 100)}%`,
   stopSeconds: (v) => (v === 0 ? 'off' : `${v.toFixed(1)} s`),
   volume: (v) => `${Math.round(v * 100)}%`,
   size: (v) => `${Math.round(v * 100)}%`,
@@ -37,6 +38,7 @@ function show() {
   document.getElementById('volume').disabled = !settings.sound;
   document.getElementById('latchClick').disabled = !settings.sound;
   document.getElementById('glassReflections').disabled = settings.glassShape === 'none';
+  document.getElementById('lensStrengthRow').hidden = settings.glassShape !== 'lens';
   const skyBg = !['studio', 'wall', 'black'].includes(settings.background);
   document.getElementById('weatherRow').hidden = !skyBg;
   document.getElementById('skyStyleRow').hidden = !skyBg;
@@ -89,6 +91,7 @@ window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && hostKind !
 if (hostKind === 'mac') document.getElementById('monitorsRow').hidden = true;
 const ver = new URLSearchParams(location.search).get('version');
 if (ver) document.getElementById('ver').textContent = `Version ${ver}.`;
+if (ver) document.getElementById('credVer').textContent = ver;
 if (hostKind === 'browser') status.textContent = 'Browser demo: settings are kept in this browser.';
 
 show();

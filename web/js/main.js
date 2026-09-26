@@ -131,7 +131,7 @@ function build() {
 
   if (!clock || !same('quality') || !same('caseStyle') || !same('finish') || !same('glass')) {
     if (clock) { scene.remove(clock.group); clock.dispose(); }
-    clock = createClock({ caseStyle: settings.caseStyle, finish: settings.finish, glassShape: settings.glassShape, glassReflections: settings.glassReflections, mirror: settings.mirror, segments: q.segments });
+    clock = createClock({ caseStyle: settings.caseStyle, finish: settings.finish, glassShape: settings.glassShape, glassReflections: settings.glassReflections, mirror: settings.mirror, lensStrength: settings.lensStrength, segments: q.segments });
     scene.add(clock.group);
     if (wall) wall.position.z = clock.back - 0.002;
   }
@@ -199,6 +199,7 @@ function build() {
   renderer.toneMappingExposure = settings.exposure;
   clock.setGlassReflections(settings.glassReflections);
   clock.setMirror(settings.mirror);
+  clock.setLensStrength(settings.lensStrength);
   clock.setDialGlow(preset && preset.dialGlow ? preset.dialGlow : 0);
   built = need;
   resize();
