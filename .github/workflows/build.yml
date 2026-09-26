@@ -110,9 +110,16 @@ jobs:
       - name: Smoke test (host the saver view, snapshot)
         continue-on-error: true
         run: |
-          clang -fobjc-arc -framework Cocoa -framework ScreenSaver -framework WebKit mac/test/host.m -o out/host
+          # Universal test host: runs the Apple silicon slice natively and the
+          # Intel slice under Rosetta, so both builds are loaded and rendered.
+          clang -fobjc-arc -arch arm64 -arch x86_64 -framework Cocoa -framework ScreenSaver -framework WebKit mac/test/host.m -o out/host
           mkdir -p out/mac-shot
-          out/host out/RailSaver.saver out/mac-shot/saver.png 2>&1 | tee out/mac-shot/log.txt
+          uname -m; sw_vers
+          out/host out/RailSaver.saver out/mac-shot/saver-arm64.png 2>&1 | tee out/mac-shot/log-arm64.txt
+          if [ "$(uname -m)" = arm64 ]; then
+            /usr/sbin/softwareupdate --install-rosetta --agree-to-license >/dev/null 2>&1 || true
+            arch -x86_64 out/host out/RailSaver.saver out/mac-shot/saver-x86_64.png 2>&1 | tee out/mac-shot/log-x86_64.txt
+          fi
           ls -la out/mac-shot
       - name: Keep the smoke-test snapshot on the ci-shots branch
         if: always() && github.event_name == 'push'
