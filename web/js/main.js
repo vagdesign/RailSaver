@@ -14,7 +14,20 @@ const audioAllowed = query.get('audio') !== '0' && mode !== 'preview';
 const capture = query.has('capture');
 
 const log = (message) => postToHost({ type: 'log', message: String(message) });
-window.addEventListener('error', (e) => log(`error: ${e.message} at ${e.filename}:${e.lineno}`));
+/** Shows a start-up problem on screen (instead of a black screen) and logs it. */
+function showError(e) {
+  const msg = (e && (e.message || e.reason)) || String(e);
+  log(`error: ${msg}`);
+  let el = document.getElementById('error');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'error';
+    el.style.cssText = 'position:fixed;left:16px;bottom:14px;right:16px;font:13px/1.4 -apple-system,Segoe UI,sans-serif;color:#f88;white-space:pre-wrap;z-index:20';
+    document.body.appendChild(el);
+  }
+  el.textContent = `RailSaver: ${msg}`;
+}
+window.addEventListener('error', (e) => { log(`error: ${e.message} at ${e.filename}:${e.lineno}`); if (!document.documentElement.dataset.ready) showError(e); });
 window.addEventListener('unhandledrejection', (e) => log(`unhandled: ${e.reason && (e.reason.stack || e.reason.message) || e.reason}`));
 
 let settings = mergeSettings(mergeSettings(DEFAULTS, loadStored()), settingsFromQuery(location.search));
@@ -307,9 +320,11 @@ if (navigator.getBattery) {
 let paused = false;
 function setPaused(p) {
   paused = p;
-  if (p) audio.suspend(); else { audio.resume(); requestAnimationFrame(frame); }
+  if (p) audio.suspend(); else { audio.resume(); schedule(); }
 }
-document.addEventListener('visibilitychange', () => setPaused(document.hidden));
+// Screen saver hosts (macOS legacyScreenSaver in particular) often report the
+// page as hidden although it is on screen; only a normal window pauses.
+if (mode === 'window') document.addEventListener('visibilitychange', () => setPaused(document.hidden));
 
 // ---- settings updates from the host or the settings page ----
 function applySettings(patch) {
@@ -345,9 +360,22 @@ if (mode === 'screensaver') {
 // ---- main loop ----
 const fpsEl = document.getElementById('fps');
 let lastRender = 0, frames = 0, totalFrames = 0, fpsT = performance.now(), lastT = 0, autoCheck = 0;
+// requestAnimationFrame, plus a timer fallback for hosts that throttle or stop
+// animation frames for a web view they think is occluded (macOS screen savers).
+let rafPending = false, lastFrameCall = 0;
+function schedule() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame((t) => { rafPending = false; frame(t); });
+}
+setInterval(() => {
+  if (!paused && performance.now() - lastFrameCall > 250) { rafPending = false; frame(performance.now()); }
+}, 16);
+
 function frame(now) {
   if (paused) return;
-  requestAnimationFrame(frame);
+  lastFrameCall = performance.now();
+  schedule();
   const cap = onBattery && settings.batterySaver ? Math.min(settings.fps || 60, 30) : settings.fps;
   if (cap > 0 && now - lastRender < 1000 / cap - 1.5) return;
   lastRender = now;
@@ -386,11 +414,20 @@ function frame(now) {
   if (totalFrames === 3) {
     document.documentElement.dataset.ready = '1';
     document.getElementById('fade').classList.add('out');
+    postToHost({ type: 'log', message: `first frames rendered (${rt.width}x${rt.height})` });
   }
 }
 
-build();
+try {
+  build();
+} catch (e) {
+  showError(e);
+  throw e;
+}
 applyAudio();
 fpsEl.hidden = !settings.showFps;
 postToHost({ type: 'ready', host: hostKind });
-requestAnimationFrame(frame);
+// In a screen saver the black fade-in cover goes at once: if frames are slow
+// to start, the saver should never look like a blank screen.
+if (mode !== 'window') document.getElementById('fade').remove();
+schedule();

@@ -4,6 +4,7 @@
 
 #import <ScreenSaver/ScreenSaver.h>
 #import <WebKit/WebKit.h>
+#import <objc/message.h>
 
 static NSString *const kScheme = @"railsaver";
 static NSString *const kModuleName = @"com.axeasy.RailSaver";
@@ -56,6 +57,31 @@ static NSString *const kSettingsKey = @"settings";
 - (BOOL)acceptsFirstResponder { return NO; }
 @end
 
+// Page messages from the screen saver itself: only logging (Console.app,
+// filter "RailSaver"). A separate object, so the view is not retained by WebKit.
+@interface RSLogHandler : NSObject <WKScriptMessageHandler, WKNavigationDelegate>
+@end
+@implementation RSLogHandler
+- (void)userContentController:(WKUserContentController *)uc didReceiveScriptMessage:(WKScriptMessage *)message {
+    if (![message.body isKindOfClass:[NSDictionary class]]) return;
+    NSDictionary *m = message.body;
+    NSLog(@"RailSaver: %@ %@", m[@"type"] ?: @"", m[@"message"] ?: m[@"host"] ?: @"");
+}
+- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
+    NSLog(@"RailSaver: page loaded %@", webView.URL);
+}
+- (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error {
+    NSLog(@"RailSaver: page failed: %@", error);
+}
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
+    NSLog(@"RailSaver: page failed to load: %@", error);
+}
+- (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView {
+    NSLog(@"RailSaver: web content process ended; reloading");
+    [webView reload];
+}
+@end
+
 // ---------------------------------------------------------------- the view
 
 @interface RailSaverClockView : ScreenSaverView <WKScriptMessageHandler, WKUIDelegate>
@@ -63,6 +89,7 @@ static NSString *const kSettingsKey = @"settings";
 @property (nonatomic, strong) NSWindow *sheet;
 @property (nonatomic, strong) WKWebView *sheetWebView;
 @property (nonatomic) BOOL loaded;
+@property (nonatomic, strong) RSLogHandler *logHandler;
 @end
 
 @implementation RailSaverClockView
@@ -97,10 +124,20 @@ static NSString *const kSettingsKey = @"settings";
         self.wantsLayer = YES;
         self.layer.backgroundColor = NSColor.blackColor.CGColor;
 
-        _webView = [[RSPassiveWebView alloc] initWithFrame:self.bounds configuration:[self configurationWithHandler:NO]];
+        WKWebViewConfiguration *cfg = [self configurationWithHandler:NO];
+        _logHandler = [RSLogHandler new];
+        [cfg.userContentController addScriptMessageHandler:_logHandler name:@"railsaver"];
+        _webView = [[RSPassiveWebView alloc] initWithFrame:self.bounds configuration:cfg];
         _webView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        _webView.navigationDelegate = _logHandler;
         [_webView setValue:@NO forKey:@"drawsBackground"];
+        // The screen saver window belongs to another process, so WebKit thinks
+        // the view is hidden and stops drawing (a black screen). Tell it not to
+        // track occlusion; the page also has its own timer fallback.
+        SEL occl = NSSelectorFromString(@"_setWindowOcclusionDetectionEnabled:");
+        if ([_webView respondsToSelector:occl]) ((void (*)(id, SEL, BOOL))objc_msgSend)(_webView, occl, NO);
         [self addSubview:_webView];
+        NSLog(@"RailSaver: view created (%@, preview %d)", NSStringFromRect(frame), isPreview);
 
         // macOS 14+: the legacy host keeps savers alive after they are dismissed.
         [[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(willStop:)
@@ -111,10 +148,14 @@ static NSString *const kSettingsKey = @"settings";
 
 - (void)viewDidMoveToWindow {
     [super viewDidMoveToWindow];
-    if (!self.window || self.loaded) return;
+    if (self.window) [self loadPage];
+}
+
+- (void)loadPage {
+    if (self.loaded) return;
     self.loaded = YES;
     // Sound only from the main screen, never from the small preview.
-    BOOL mainScreen = self.window.screen == NSScreen.screens.firstObject;
+    BOOL mainScreen = !self.window || self.window.screen == NSScreen.screens.firstObject;
     BOOL audio = !self.isPreview && mainScreen;
     NSString *url = [NSString stringWithFormat:@"%@://app/index.html?mode=%@&audio=%d",
                      kScheme, self.isPreview ? @"preview" : @"saver", audio ? 1 : 0];
@@ -126,7 +167,7 @@ static NSString *const kSettingsKey = @"settings";
     [self.webView evaluateJavaScript:js completionHandler:nil];
 }
 
-- (void)startAnimation { [super startAnimation]; [self post:@"resume"]; }
+- (void)startAnimation { [super startAnimation]; [self loadPage]; [self post:@"resume"]; }
 - (void)stopAnimation { [super stopAnimation]; [self post:@"pause"]; }
 
 - (void)willStop:(NSNotification *)n {
