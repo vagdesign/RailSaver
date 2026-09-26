@@ -8,13 +8,24 @@ A screen saver for **Windows** (and **macOS**) showing the iconic Swiss railway 
 - **A mild tilt / swing** of the clock towards the camera, so you see the depth of the case and the hands. It also drifts slowly across the screen to protect OLED screens
 - **The famous stop-to-go movement**: the red second hand sweeps round, **waits at 12**, then the minute impulse releases it and the minute hand **jumps** forward with a small mechanical overshoot
 - **Sound when the second hand is released**: a synthesised solenoid clack, the minute hand landing and a short ring of the steel case. There is also an optional soft click when the hand stops at 12
-- Backgrounds: dark studio, concrete facade (the clock throws its shadow on the wall), overcast sky, black
+- Backgrounds: dark studio, concrete facade (the clock throws its shadow on the wall), black, and **skies**:
+  spring (blossom petals), summer (blue sky with clouds), autumn (golden light, falling leaves), winter (snowy ground),
+  sunset, rainy day (rain), snowfall, overcast and night (moon, stars, lit dial). **Automatic** follows today's season
+  and switches to sunset and night at the right hours (southern hemisphere option)
+- **The steel case and the glass reflect the sky** you choose: blue sky and clouds, sunset glow, the snowy ground.
+  The skies are generated live on the GPU; the clouds drift and the reflections follow them
 - **Quality & performance settings** like 3D Earth: Low / Medium / High / Ultra (shadow resolution, geometry detail, reflections), MSAA 0–8×, 15–120 fps or display rate, render scale 50–200 % (supersampling), a battery saver and an FPS counter
 - Settings page with a **live 3D preview** and presets (*Showcase, Authentic, Balanced, Power saver*)
 
 | Dark studio | Concrete facade | Overcast sky |
 |---|---|---|
 | ![](docs/preview-studio.png) | ![](docs/preview-wall.png) | ![](docs/preview-sky.png) |
+
+| Spring | Summer | Autumn | Winter |
+|---|---|---|---|
+| ![](docs/sky-spring.png) | ![](docs/sky-summer.png) | ![](docs/sky-autumn.png) | ![](docs/sky-winter.png) |
+| **Sunset** | **Rainy day** | **Snowfall** | **Night** |
+| ![](docs/sky-sunset.png) | ![](docs/sky-rain.png) | ![](docs/sky-snow.png) | ![](docs/sky-night.png) |
 
 ![Settings with live preview](docs/settings.png)
 
@@ -40,7 +51,7 @@ Unzip `RailSaver-mac-x.y.z.zip` and double-click `RailSaver.saver`, then choose 
 |---|---|
 | Clock | Case: *station* (deep drum) or *wall* (slim) · brushed / polished steel · glass on/off · glass reflection strength |
 | Movement & sound | **Stop at 12** (0–8 s; default 6 s, the real clocks use 1.5 s, 0 = continuous sweep) · mechanical minute jump · release sound and volume · soft click at 12 · *Play the release sound* button |
-| Camera & scene | Background · clock size · **tilt/swing amount** and cycle length · light angle (longer or shorter hand shadows) · brightness · drift |
+| Camera & scene | Background (studio, facade, black, 10 skies incl. automatic seasons) · weather particles · clock size · **tilt/swing amount** and cycle length · light angle (longer or shorter hand shadows) · brightness · drift |
 | Performance | Quality *Low / Medium / High / Ultra* · anti-aliasing · frame rate · render scale · monitors (all / primary only) · battery saver · show FPS |
 
 | Quality | Shadow map | Geometry segments | Reflection map | Resolution |
@@ -57,7 +68,9 @@ Windows stores the settings in `%APPDATA%\RailSaver\settings.json` and the log i
 ```
 web/                       the clock (Three.js / WebGL 2), shared by every platform
  ├─ js/clock.js            procedural model: lathe-turned case & bezel, dial, extruded hands, domed glass
- ├─ js/stage.js            studio / sky reflection environments, backdrop, concrete wall
+ ├─ js/stage.js            studio reflection environment, backdrop, concrete wall
+ ├─ js/sky.js              procedural skies (clouds, sun, moon, stars) + their reflection map, automatic seasons
+ ├─ js/weather.js          rain, snow, petals and leaves
  ├─ js/motion.js           stop-to-go movement and minute jump (unit-tested: tools/test-motion.mjs)
  ├─ js/audio.js            Web Audio synthesis of the release clack and the latch click
  ├─ js/main.js             renderer, shadows, MSAA target + tone mapping, camera swing, frame cap

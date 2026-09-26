@@ -35,6 +35,9 @@ function show() {
   document.getElementById('volume').disabled = !settings.sound;
   document.getElementById('latchClick').disabled = !settings.sound;
   document.getElementById('glassReflections').disabled = !settings.glass;
+  const skyBg = !['studio', 'wall', 'black'].includes(settings.background);
+  document.getElementById('weatherRow').hidden = !skyBg;
+  document.getElementById('southernRow').hidden = settings.background !== 'auto';
 }
 
 function read(el) {

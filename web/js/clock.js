@@ -280,6 +280,8 @@ export function createClock({ caseStyle = 'station', finish = 'brushed', glass =
       minute.rotation.z = m * k;
       second.rotation.z = s * k;
     },
+    /** Lit dial (night): the dial glows from inside like the real station clocks. */
+    setDialGlow(v) { dialMat.emissive.setRGB(1, 0.97, 0.9); dialMat.emissiveIntensity = v; },
     setGlassReflections(v) { if (glassMesh) glassMesh.material.envMapIntensity = 1.6 * v; },
     dispose() {
       for (const d of disposables) d.dispose();
