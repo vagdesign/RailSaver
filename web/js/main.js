@@ -73,6 +73,17 @@ const fill = new THREE.DirectionalLight(0xdfe8ff, 0.25);
 fill.position.set(6, -2, 6);
 scene.add(fill);
 
+/**
+ * Direction towards the key light. lightDirection is where the light comes
+ * from, as a clock-face angle (0 = from 12 o'clock, 90 = from 3 o'clock,
+ * clockwise); lightAngle is its tilt away from straight in front.
+ */
+function lightDirection() {
+  const a = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(settings.lightAngle, 10, 70));
+  const az = THREE.MathUtils.degToRad(settings.lightDirection);
+  return new THREE.Vector3(Math.sin(az) * Math.sin(a), Math.cos(az) * Math.sin(a), Math.cos(a));
+}
+
 // Everything that depends on settings is (re)built here.
 let clock = null, backdrop = null, wall = null, envRT = null, built = {};
 let sky = null, weather = null, skyName = null, envAge = 0;
@@ -158,7 +169,7 @@ function build() {
       const v = PHOTO_VIEW[skyName] || { sun: 'front' };
       if (v.viewU !== undefined) photo.bgMaterial.uniforms.uYaw.value = v.viewU - 0.5;
       else if (v.sun === 'behind') photo.setSunAzimuth(v.az);
-      else photo.setSunAzimuth(Math.atan2(-0.62, -Math.cos(THREE.MathUtils.degToRad(settings.lightAngle)) / Math.sin(THREE.MathUtils.degToRad(settings.lightAngle))));
+      else { const d = lightDirection(); photo.setSunAzimuth(Math.atan2(d.x, -d.z)); }
       photo.view = v;
       scene.add(photo.background);
     } else if (skyName) {
@@ -190,8 +201,7 @@ function build() {
   Object.assign(key.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext, near: 1, far: 30 });
   key.shadow.camera.updateProjectionMatrix();
 
-  const a = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(settings.lightAngle, 10, 70));
-  key.position.set(-Math.sin(a) * 0.62, Math.sin(a) * 0.78, Math.cos(a)).multiplyScalar(12);
+  key.position.copy(lightDirection()).multiplyScalar(12);
   if (preset && photo) {
     // Light from the photo: the sun's own colour; ambient normalised to the panorama.
     const l = skyLight(preset);

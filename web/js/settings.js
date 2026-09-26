@@ -25,6 +25,7 @@ export const DEFAULTS = {
   swingSeconds: 40,       // seconds per swing cycle
   drift: true,            // slow drift across the screen (protects OLED/plasma screens)
   lightAngle: 40,         // key-light elevation from the dial normal, degrees (longer shadows when larger)
+  lightDirection: 322,    // where the light comes from, clock-face degrees (0 = 12 o'clock, clockwise); 322 ≈ 10:45
   exposure: 1.0,
   // --- sound ---
   sound: true,
@@ -39,6 +40,7 @@ export const DEFAULTS = {
   showFps: false,
   // --- host only (ignored by the page) ---
   monitors: 'all',        // 'all' | 'primary' (other screens black)
+  autoUpdate: true,       // Windows: install new releases automatically (checked at most every 12 h)
 };
 
 // What each quality level means. Also shown in the settings page.

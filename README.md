@@ -62,6 +62,11 @@ Portable: unzip `RailSaver-portable-…zip` anywhere, right-click `RailSaver.scr
 
 Requirements: x64, the Microsoft Edge **WebView2 Runtime** (present on almost every PC; without it RailSaver draws a flat 2D clock).
 
+## Updates
+
+- **Windows**: RailSaver checks this repository's Releases at most every 12 hours when the screen saver starts. With *Install updates automatically* on (default), it downloads the new setup, verifies its size and SHA-256, waits until the screen saver has closed and installs it silently. Your settings and your screen-saver choice are kept. You can also check any time in **Settings → Updates** and install with one click. Portable copies open the download page instead.
+- **macOS**: **Settings → Updates** shows when a new version is out and downloads it; double-click the new `RailSaver.saver` to replace the old one.
+
 ## Install (macOS 11+)
 
 Unzip `RailSaver-mac-x.y.z.zip` and double-click `RailSaver.saver`, then choose it in **System Settings → Screen Saver** and click **Options…** for its settings. It is ad-hoc signed but not notarised. If macOS refuses to open it, run `xattr -dr com.apple.quarantine RailSaver.saver` first.
@@ -72,7 +77,7 @@ Unzip `RailSaver-mac-x.y.z.zip` and double-click `RailSaver.saver`, then choose 
 |---|---|
 | Clock | Case: *station* (deep drum) or *wall* (slim) · finish: chrome / brushed inox / aged · **mirror effect** · glass: flat / spherical / none · glass reflection strength |
 | Movement & sound | **Stop at 12** (0–8 s; default 6 s, the real clocks use 1.5 s, 0 = continuous sweep) · mechanical minute jump · release sound and volume · soft click at 12 · *Play the release sound* button |
-| Camera & scene | Background (studio, facade, black, 12 skies incl. automatic seasons) · sky style (photographic / generated) · background focus · weather particles · clock size · **tilt/swing amount** and cycle length · light angle (longer or shorter hand shadows) · brightness · drift |
+| Camera & scene | **Light direction knob** (drag the sun round: where the light comes from, so where the shadows fall) · Background (studio, facade, black, 12 skies incl. automatic seasons) · sky style (photographic / generated) · background focus · weather particles · clock size · **tilt/swing amount** and cycle length · light angle (longer or shorter hand shadows) · brightness · drift |
 | Performance | Quality *Low / Medium / High / Ultra* · anti-aliasing · frame rate · render scale · monitors (all / primary only) · battery saver · show FPS |
 
 | Quality | Shadow map | Geometry segments | Reflection map | Resolution |

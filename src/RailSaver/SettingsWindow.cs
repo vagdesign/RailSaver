@@ -82,12 +82,48 @@ internal sealed class SettingsWindow : Form
                 case "close":
                     BeginInvoke(Close);
                     break;
+                case "installUpdate":
+                    _ = InstallUpdateAsync();
+                    break;
                 case "log":
                     Log.Info("settings page: " + (root.TryGetProperty("message", out var m) ? m.GetString() : ""));
                     break;
             }
         }
         catch (Exception ex) { Log.Error("Settings message", ex); }
+    }
+
+    private void Status(string text, bool failed = false)
+    {
+        try { _web.CoreWebView2?.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "updateStatus", text, failed })); }
+        catch { /* window closing */ }
+    }
+
+    /// <summary>Settings → Install update: download, verify, run the installer (it keeps the settings), close.</summary>
+    private async Task InstallUpdateAsync()
+    {
+        try
+        {
+            var r = await UpdateService.CheckAsync();
+            if (r == null) { Status("RailSaver is up to date."); return; }
+            if (!UpdateService.IsInstalled)
+            {
+                Status("This copy is portable (not installed): opening the download page.");
+                Process.Start(new ProcessStartInfo(r.PageUrl) { UseShellExecute = true });
+                return;
+            }
+            var progress = new Progress<int>(p => Status($"Downloading {r.Version}… {p}%"));
+            string file = await UpdateService.DownloadAsync(r, progress);
+            Status($"Installing {r.Version}…");
+            UpdateService.RunInstaller(file, showProgress: true);
+            await Task.Delay(800);
+            Application.Exit();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Installing update", ex);
+            Status("Update failed: " + ex.Message, failed: true);
+        }
     }
 
     protected override void Dispose(bool disposing)

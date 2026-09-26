@@ -20,6 +20,7 @@ internal sealed class SaverContext : ApplicationContext
             f.Show();
         }
         Cursor.Hide();
+        UpdateService.MaybeStartBackgroundCheck();
     }
 }
 
