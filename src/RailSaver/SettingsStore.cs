@@ -37,6 +37,12 @@ internal static class SettingsStore
     /// <summary>Script that hands the saved settings to the page before it runs.</summary>
     public static string InjectionScript() => $"window.RAILSAVER_SETTINGS = {Load().ToJsonString()};";
 
+    public static bool GetBool(string key, bool fallback)
+    {
+        try { return Load()[key]?.GetValue<bool>() ?? fallback; }
+        catch { return fallback; }
+    }
+
     public static string Get(string key, string fallback)
     {
         try { return Load()[key]?.GetValue<string>() ?? fallback; }

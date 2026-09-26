@@ -22,6 +22,9 @@ internal static class Program
         Application.ThreadException += (_, e) => Log.Error("UI thread", e.Exception);
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Error("Unhandled", e.ExceptionObject as Exception);
 
+        if (args.Any(a => a.Equals("--update", StringComparison.OrdinalIgnoreCase)))
+            return UpdateService.RunBackgroundAsync().GetAwaiter().GetResult();
+
         var (mode, hwnd) = ParseArgs(args);
         DevTools = args.Any(a => a.Equals("--devtools", StringComparison.OrdinalIgnoreCase));
         Log.Info($"RailSaver {Version} {string.Join(' ', args)} -> {mode}");

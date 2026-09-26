@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 env:
-  VERSION: 0.6.1
+  VERSION: 0.7.0
 
 jobs:
   scene:
@@ -172,6 +172,7 @@ jobs:
             - Windows 10 (1809+) or 11, x64. SmartScreen may warn because the installer is not code-signed: *More info → Run anyway*.
             - Uses the Microsoft Edge WebView2 Runtime (already on almost every PC).
             - No installer? Unzip the portable `.zip`, right-click `RailSaver.scr` → **Install**.
+            - Already installed (0.7.0 or later)? RailSaver updates itself: **Settings → Updates**, or automatically when the screen saver runs.
 
             **macOS (11+):** unzip `RailSaver-mac-${{ steps.ver.outputs.version }}.zip` and double-click `RailSaver.saver`. It is not notarised: if macOS refuses, run `xattr -dr com.apple.quarantine ~/Downloads/RailSaver.saver` first.
 
