@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>RailSaver</AssemblyName>
+    <RootNamespace>RailSaver</RootNamespace>
+    <Product>RailSaver</Product>
+    <Company>Ax-Easy</Company>
+    <Authors>Vangelis Makridakis; Claude (Anthropic)</Authors>
+    <Copyright>© 2026 Ax-Easy - Vangelis Makridakis</Copyright>
+    <Description>Swiss railway clock 3D screen saver</Description>
+    <Version>0.1.0</Version>
+    <ApplicationIcon>RailSaver.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- The WebView2 package also carries a WPF control we don't use. -->
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The 3D scene (HTML/JS) ships next to the executable in .\web -->
+    <Content Include="..\..\web\**\*" LinkBase="web" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="RailSaver.ico" LogicalName="RailSaver.ico" />
+  </ItemGroup>
+
+  <!-- Windows runs screen savers as .scr files: publish a copy of the
+       executable under that name (the app host finds RailSaver.dll either way). -->
+  <Target Name="CopyScr" AfterTargets="Publish">
+    <Copy SourceFiles="$(PublishDir)RailSaver.exe" DestinationFiles="$(PublishDir)RailSaver.scr" />
+  </Target>
+
+</Project>

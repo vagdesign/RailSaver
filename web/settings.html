@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RailSaver Settings</title>
+<style>
+  :root {
+    --bg: #15171a; --panel: #1d2024; --line: #2c3036; --text: #e8eaed; --muted: #9aa1a9;
+    --accent: #e3141b; --accent-2: #ff3b41; --field: #262a2f;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.45 "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", system-ui, sans-serif; }
+  body { display: grid; grid-template-columns: minmax(320px, 400px) 1fr; grid-template-rows: 1fr auto; height: 100vh; }
+  aside { grid-row: 1; overflow-y: auto; padding: 18px 20px 12px; border-right: 1px solid var(--line); background: var(--panel); }
+  main { grid-row: 1; position: relative; background: #000; min-height: 0; }
+  main iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  footer { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--panel); }
+  footer .grow { flex: 1; color: var(--muted); font-size: 12.5px; }
+  h1 { font-size: 19px; margin: 0 0 2px; letter-spacing: 0.01em; display: flex; align-items: center; gap: 10px; }
+  h1 .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px #fff2; }
+  .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 14px; }
+  details { border-top: 1px solid var(--line); padding: 8px 0; }
+  details[open] { padding-bottom: 14px; }
+  summary { cursor: pointer; font-weight: 600; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: #cfd3d8; padding: 6px 0; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '▸'; display: inline-block; width: 16px; color: var(--muted); transition: transform .15s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  .row { display: grid; grid-template-columns: 138px 1fr; gap: 10px; align-items: center; margin: 9px 0; }
+  .row > label:first-child { color: #c9cdd2; }
+  .row.check { grid-template-columns: 1fr; }
+  .hint { grid-column: 2; color: var(--muted); font-size: 12px; margin-top: -4px; }
+  .row.check .hint { grid-column: 1; padding-left: 26px; }
+  select, input[type=number] { width: 100%; background: var(--field); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: inherit; }
+  .range { display: grid; grid-template-columns: 1fr 52px; gap: 8px; align-items: center; }
+  .range output { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12.5px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0 10px 0 0; vertical-align: -3px; }
+  .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 12px; }
+  button { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 7px 14px; cursor: pointer; }
+  button:hover { border-color: #4a5058; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { background: var(--accent-2); }
+  .presets button { text-align: left; padding: 8px 10px; }
+  .presets button small { display: block; color: var(--muted); font-size: 11.5px; }
+  .credits { color: var(--muted); font-size: 12px; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .credits a { color: #cfd3d8; }
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; grid-template-rows: 38vh 1fr auto; }
+    main { grid-row: 1; } aside { grid-row: 2; border-right: 0; }
+  }
+</style>
+</head>
+<body>
+<aside>
+  <h1><span class="dot"></span>RailSaver</h1>
+  <div class="sub">The Swiss railway clock, in 3D. <span id="ver"></span></div>
+
+  <div class="presets" id="presets">
+    <button data-preset="showcase">Showcase<small>Ultra quality, 8× AA</small></button>
+    <button data-preset="authentic">Authentic<small>1.5 s stop, facade</small></button>
+    <button data-preset="balanced">Balanced<small>High quality, 60 fps</small></button>
+    <button data-preset="saver">Power saver<small>Laptops, integrated GPUs</small></button>
+  </div>
+
+  <details open>
+    <summary>Clock</summary>
+    <div class="row"><label for="caseStyle">Case</label>
+      <select id="caseStyle"><option value="station">Station clock (deep drum)</option><option value="wall">Wall clock (slim)</option></select></div>
+    <div class="row"><label for="finish">Steel finish</label>
+      <select id="finish"><option value="brushed">Brushed stainless</option><option value="polished">Polished stainless</option></select></div>
+    <div class="row check"><label><input type="checkbox" id="glass">Glass crystal</label></div>
+    <div class="row"><label for="glassReflections">Glass reflections</label>
+      <div class="range"><input type="range" id="glassReflections" min="0" max="2" step="0.05"><output></output></div></div>
+  </details>
+
+  <details open>
+    <summary>Movement &amp; sound</summary>
+    <div class="row"><label for="stopSeconds">Stop at 12</label>
+      <div class="range"><input type="range" id="stopSeconds" min="0" max="8" step="0.5"><output></output></div>
+      <div class="hint">The second hand waits at 12 for the minute impulse. The real clocks wait 1.5 s; 0 = continuous sweep.</div></div>
+    <div class="row check"><label><input type="checkbox" id="minuteJump">Mechanical minute jump (overshoot &amp; settle)</label></div>
+    <div class="row check"><label><input type="checkbox" id="sound">Sound when the second hand is released</label></div>
+    <div class="row"><label for="volume">Volume</label>
+      <div class="range"><input type="range" id="volume" min="0" max="1" step="0.05"><output></output></div></div>
+    <div class="row check"><label><input type="checkbox" id="latchClick">Soft click when the hand stops at 12</label></div>
+    <div class="row"><label></label><div><button id="testSound" type="button">▶ Play the release sound</button></div></div>
+  </details>
+
+  <details open>
+    <summary>Camera &amp; scene</summary>
+    <div class="row"><label for="background">Background</label>
+      <select id="background"><option value="studio">Dark studio</option><option value="wall">Concrete facade</option><option value="sky">Overcast sky</option><option value="black">Black</option></select></div>
+    <div class="row"><label for="size">Clock size</label>
+      <div class="range"><input type="range" id="size" min="0.4" max="0.95" step="0.01"><output></output></div></div>
+    <div class="row"><label for="swing">Tilt / swing</label>
+      <div class="range"><input type="range" id="swing" min="0" max="1.5" step="0.05"><output></output></div></div>
+    <div class="row"><label for="swingSeconds">Swing cycle</label>
+      <div class="range"><input type="range" id="swingSeconds" min="10" max="120" step="1"><output></output></div></div>
+    <div class="row"><label for="lightAngle">Light angle</label>
+      <div class="range"><input type="range" id="lightAngle" min="15" max="65" step="1"><output></output></div>
+      <div class="hint">Larger = longer shadows under the hands.</div></div>
+    <div class="row"><label for="exposure">Brightness</label>
+      <div class="range"><input type="range" id="exposure" min="0.5" max="1.6" step="0.05"><output></output></div></div>
+    <div class="row check"><label><input type="checkbox" id="drift">Drift slowly across the screen</label>
+      <div class="hint">Protects OLED and plasma screens from burn-in.</div></div>
+  </details>
+
+  <details open>
+    <summary>Performance</summary>
+    <div class="row"><label for="quality">Quality</label>
+      <select id="quality"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="ultra">Ultra</option></select>
+      <div class="hint" id="qualityHint"></div></div>
+    <div class="row"><label for="antialias">Anti-aliasing</label>
+      <select id="antialias"><option value="0">Off</option><option value="2">MSAA 2×</option><option value="4">MSAA 4×</option><option value="8">MSAA 8×</option></select></div>
+    <div class="row"><label for="fps">Frame rate</label>
+      <select id="fps"><option value="15">15 fps</option><option value="24">24 fps</option><option value="30">30 fps</option><option value="60">60 fps</option><option value="120">120 fps</option><option value="0">Display refresh rate</option></select></div>
+    <div class="row"><label for="renderScale">Render scale</label>
+      <div class="range"><input type="range" id="renderScale" min="0.5" max="2" step="0.05"><output></output></div>
+      <div class="hint">Above 100% = supersampling (sharper, slower).</div></div>
+    <div class="row" id="monitorsRow"><label for="monitors">Monitors</label>
+      <select id="monitors"><option value="all">Clock on every monitor</option><option value="primary">Primary only (others black)</option></select></div>
+    <div class="row check"><label><input type="checkbox" id="batterySaver">On battery: max 30 fps, smaller shadows</label></div>
+    <div class="row check"><label><input type="checkbox" id="showFps">Show frame rate</label></div>
+  </details>
+
+  <div class="credits">
+    Swiss railway clock design by Hans Hilfiker (1944), second hand 1953. RailSaver is not affiliated with SBB CFF FFS or Mondaine.<br>
+    Made by Vangelis Makridakis &amp; Claude · <a href="https://github.com/vagdesign/RailSaver" target="_blank" rel="noopener">github.com/vagdesign/RailSaver</a>
+  </div>
+</aside>
+<main><iframe id="preview" title="Preview" src="index.html?mode=window&amp;audio=1"></iframe></main>
+<footer>
+  <button id="reset" type="button">Reset to defaults</button>
+  <span class="grow" id="status"></span>
+  <button id="cancel" type="button">Cancel</button>
+  <button id="ok" class="primary" type="button">Save</button>
+</footer>
+<script type="module" src="js/ui.js"></script>
+</body>
+</html>

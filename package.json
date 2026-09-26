@@ -1,0 +1,11 @@
+{
+  "name": "railsaver",
+  "private": true,
+  "type": "module",
+  "description": "Swiss railway clock 3D screen saver (WebGL scene + Windows/macOS hosts)",
+  "scripts": {
+    "serve": "npx http-server web -p 8080 -c-1",
+    "test": "node tools/test-motion.mjs",
+    "screenshot": "node tools/screenshot.mjs previews"
+  }
+}

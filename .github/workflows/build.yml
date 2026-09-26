@@ -1,0 +1,141 @@
+name: Build
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  VERSION: 0.1.0
+
+jobs:
+  scene:
+    name: Clock scene (tests + headless previews)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        run: for f in web/js/*.js tools/*.mjs; do node --check "$f"; done
+      - name: Movement tests
+        run: node tools/test-motion.mjs
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Render previews
+        run: node tools/screenshot.mjs previews "background=studio&drift=0&swing=1&swingPhase=0.25" "background=wall&drift=0&swing=1&swingPhase=0.7" "background=sky&drift=0" "caseStyle=wall&finish=polished&drift=0@1080x1350"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: previews
+          path: previews/*.png
+
+  windows:
+    name: Windows screen saver + installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = '${{ env.VERSION }}'
+          if ('${{ github.ref_type }}' -eq 'tag') { $v = '${{ github.ref_name }}'.TrimStart('v') }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Publish (self-contained, win-x64)
+        run: dotnet publish src/RailSaver/RailSaver.csproj -c Release -r win-x64 --self-contained true -p:Version=${{ steps.ver.outputs.version }} -o publish
+
+      - name: Verify output
+        shell: pwsh
+        run: |
+          foreach ($f in 'publish/RailSaver.exe', 'publish/RailSaver.scr', 'publish/web/index.html', 'publish/web/settings.html', 'publish/web/js/main.js', 'publish/web/lib/three.module.js', 'publish/WebView2Loader.dll') {
+            if (!(Test-Path $f)) { throw "missing $f" }
+          }
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
+          & $iscc "/DAppVersion=${{ steps.ver.outputs.version }}" "/DSourceDir=..\publish" installer\RailSaver.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+
+      - name: Portable zip
+        shell: pwsh
+        run: Compress-Archive -Path publish\* -DestinationPath "out\RailSaver-portable-${{ steps.ver.outputs.version }}-win-x64.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RailSaver-${{ steps.ver.outputs.version }}-windows
+          path: out/*
+
+  mac:
+    name: macOS screen saver
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        id: ver
+        run: |
+          v='${{ env.VERSION }}'
+          if [ '${{ github.ref_type }}' = 'tag' ]; then v='${{ github.ref_name }}'; v="${v#v}"; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Build RailSaver.saver
+        run: mac/build.sh ${{ steps.ver.outputs.version }}
+      - name: Check bundle
+        run: |
+          lipo -info out/RailSaver.saver/Contents/MacOS/RailSaver
+          test -f out/RailSaver.saver/Contents/Resources/web/index.html
+          codesign --verify --verbose out/RailSaver.saver
+      - name: Zip
+        run: cd out && ditto -c -k --sequesterRsrc --keepParent RailSaver.saver RailSaver-mac-${{ steps.ver.outputs.version }}.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RailSaver-${{ steps.ver.outputs.version }}-mac
+          path: out/RailSaver-mac-*.zip
+
+  release:
+    name: GitHub release
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    needs: [scene, windows, mac]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: RailSaver-*
+          merge-multiple: true
+      - name: Version
+        id: ver
+        run: |
+          v='${{ env.VERSION }}'
+          if [ '${{ github.ref_type }}' = 'tag' ]; then v='${{ github.ref_name }}'; v="${v#v}"; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: RailSaver ${{ steps.ver.outputs.version }}
+          make_latest: true
+          files: dist/*
+          body: |
+            **Windows:** download `RailSaver-Setup-${{ steps.ver.outputs.version }}.exe` and run it. It installs per user (no administrator rights) and can make RailSaver your screen saver right away.
+            - Windows 10 (1809+) or 11, x64. SmartScreen may warn because the installer is not code-signed: *More info → Run anyway*.
+            - Uses the Microsoft Edge WebView2 Runtime (already on almost every PC).
+            - No installer? Unzip the portable `.zip`, right-click `RailSaver.scr` → **Install**.
+
+            **macOS (11+):** unzip `RailSaver-mac-${{ steps.ver.outputs.version }}.zip` and double-click `RailSaver.saver`. It is not notarised: if macOS refuses, run `xattr -dr com.apple.quarantine ~/Downloads/RailSaver.saver` first.
+
+            Built from ${{ github.sha }}.
