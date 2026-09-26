@@ -4,6 +4,7 @@ import { createClock } from './clock.js';
 import { createEnvironment, createBackdrop, createWall, BACKGROUNDS } from './stage.js';
 import { Sky, SKIES, autoSky, skyLight } from './sky.js';
 import { Weather } from './weather.js';
+import { PhotoSky, photoSkiesAvailable } from './photosky.js';
 import { handAngles, nextEvents } from './motion.js';
 import { ClockAudio } from './audio.js';
 
@@ -62,7 +63,37 @@ scene.add(fill);
 // Everything that depends on settings is (re)built here.
 let clock = null, backdrop = null, wall = null, envRT = null, built = {};
 let sky = null, weather = null, skyName = null, envAge = 0;
+let photo = null;                 // PhotoSky in use
+const photoCache = new Map();     // key -> Promise<PhotoSky|null>
+let photoKeys = {};
+photoSkiesAvailable().then((m) => { photoKeys = m; if (Object.keys(m).length) build(); });
+
+// How each photographic sky is framed. 'front': the sun is turned to match the
+// key light (sharp shadows, sunlit steel); 'behind': the sun or moon is in view
+// behind the clock; viewU: this panorama column is behind the clock.
+const PHOTO_VIEW = {
+  sunset: { sun: 'behind', az: 0.32, lookUp: 0.2 },
+  night: { sun: 'behind', az: -0.3, lookUp: 0.22 },
+  railway: { viewU: 0.677, lookUp: 0.06 },
+  winter: { sun: 'front', lookUp: 0.2 },
+  snow: { sun: 'front', lookUp: 0.2 },
+  fields: { sun: 'front', lookUp: 0.22 },
+};
+
+function wantPhoto() {
+  return skyName && settings.skyStyle === 'photo' && photoKeys[skyName] ? skyName : null;
+}
+
+function requestPhoto(key) {
+  if (!photoCache.has(key)) {
+    photoCache.set(key, PhotoSky.load(key, { maxAniso: renderer.capabilities.getMaxAnisotropy() })
+      .catch((e) => { log(`photo sky ${key}: ${e.message || e}`); return null; }));
+    photoCache.get(key).then((p) => { if (p) readyPhotos.set(key, p); build(); });
+  }
+  return photoCache.get(key);
+}
 const pmrem = new THREE.PMREMGenerator(renderer);
+const readyPhotos = new Map();
 
 /** The sky preset in use, or null for the studio / wall / black backgrounds. */
 function currentSky() {
@@ -74,8 +105,8 @@ function currentSky() {
 function refreshEnvironment() {
   const q = QUALITY[settings.quality];
   const old = envRT;
-  envRT = skyName
-    ? pmrem.fromScene(sky.envScene, 0, 0.1, 100, { size: q.env })
+  envRT = photo ? pmrem.fromScene(photo.envScene, 0, 0.1, 100, { size: q.env })
+    : skyName ? pmrem.fromScene(sky.envScene, 0, 0.1, 100, { size: q.env })
     : createEnvironment(renderer, settings.background === 'wall' ? 'wall' : 'studio', q.env);
   scene.environment = envRT.texture;
   if (old) old.dispose();
@@ -85,9 +116,16 @@ function refreshEnvironment() {
 function build() {
   const q = QUALITY[settings.quality];
   skyName = currentSky();
+  // A photographic sky once its files are loaded; the generated one meanwhile.
+  let wantedPhoto = null;
+  const pk = wantPhoto();
+  if (pk) {
+    requestPhoto(pk);
+    wantedPhoto = readyPhotos.get(pk) || null;
+  }
   const need = {
     quality: settings.quality, caseStyle: settings.caseStyle, finish: settings.finish, glass: settings.glass,
-    background: skyName || settings.background, weather: settings.weather && skyName ? SKIES[skyName].particles || null : null,
+    background: (wantedPhoto ? 'photo:' : '') + (skyName || settings.background), weather: settings.weather && skyName ? SKIES[skyName].particles || null : null,
   };
   const same = (k) => built[k] === need[k];
 
@@ -101,7 +139,16 @@ function build() {
     if (backdrop) { scene.remove(backdrop); backdrop.geometry.dispose(); backdrop.material.dispose(); backdrop = null; }
     if (wall) { scene.remove(wall); wall.userData.dispose(); wall = null; }
     if (sky) { scene.remove(sky.mesh); sky.dispose(); sky = null; }
-    if (skyName) {
+    if (photo) { scene.remove(photo.background); photo = null; }   // kept in the cache
+    if (wantedPhoto) {
+      photo = wantedPhoto;
+      const v = PHOTO_VIEW[skyName] || { sun: 'front' };
+      if (v.viewU !== undefined) photo.bgMaterial.uniforms.uYaw.value = v.viewU - 0.5;
+      else if (v.sun === 'behind') photo.setSunAzimuth(v.az);
+      else photo.setSunAzimuth(Math.atan2(-0.62, -Math.cos(THREE.MathUtils.degToRad(settings.lightAngle)) / Math.sin(THREE.MathUtils.degToRad(settings.lightAngle))));
+      photo.view = v;
+      scene.add(photo.background);
+    } else if (skyName) {
       sky = new Sky(settings.quality === 'low' ? 3 : 5);
       sky.set(skyName);
       sky.update(animTime());
@@ -132,7 +179,13 @@ function build() {
 
   const a = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(settings.lightAngle, 10, 70));
   key.position.set(-Math.sin(a) * 0.62, Math.sin(a) * 0.78, Math.cos(a)).multiplyScalar(12);
-  if (preset) {
+  if (preset && photo) {
+    // Light from the photo: the sun's own colour; ambient normalised to the panorama.
+    const l = skyLight(preset);
+    key.color.copy(photo.info.sunColor).lerp(l.color, 0.35).lerp(new THREE.Color(1, 1, 1), preset.photoNeutral ?? 0);
+    key.intensity = l.intensity * (preset.photoLight ?? 1);
+    scene.environmentIntensity = THREE.MathUtils.clamp(0.55 / Math.max(photo.info.mean, 1e-3), 0.15, 4) * (preset.photoEnv ?? 1);
+  } else if (preset) {
     const l = skyLight(preset);
     key.color.copy(l.color);
     key.intensity = l.intensity;
@@ -304,6 +357,10 @@ function frame(now) {
   clock.setAngles(handAngles(t, settings));
   scheduleSounds(t);
   placeCamera(at);
+  if (photo) {
+    camera.updateMatrixWorld();
+    photo.updateBackground(camera, { fov: 62, blur: settings.skyBlur, lookUp: photo.view.lookUp ?? 0.36 });
+  }
   if (sky) {
     sky.update(at);
     // Clouds move: refresh the reflections now and then (not on Low).

@@ -17,6 +17,7 @@ const fmt = {
   lightAngle: (v) => `${v}°`,
   exposure: (v) => `${Math.round(v * 100)}%`,
   renderScale: (v) => `${Math.round(v * 100)}%`,
+  skyBlur: (v) => (v === 0 ? 'sharp' : v.toFixed(1)),
 };
 
 const fields = Object.keys(DEFAULTS).map((k) => document.getElementById(k)).filter(Boolean);
@@ -37,6 +38,8 @@ function show() {
   document.getElementById('glassReflections').disabled = !settings.glass;
   const skyBg = !['studio', 'wall', 'black'].includes(settings.background);
   document.getElementById('weatherRow').hidden = !skyBg;
+  document.getElementById('skyStyleRow').hidden = !skyBg;
+  document.getElementById('skyBlurRow').hidden = !skyBg || settings.skyStyle !== 'photo';
   document.getElementById('southernRow').hidden = settings.background !== 'auto';
 }
 

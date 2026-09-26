@@ -14,6 +14,8 @@ export const DEFAULTS = {
   // --- camera & scene ---
   background: 'studio',   // 'studio' | 'wall' | 'black' | a sky: 'auto' | 'summer' | 'spring' | 'autumn' |
                           // 'winter' | 'sunset' | 'rain' | 'snow' | 'overcast' | 'night'  (see sky.js)
+  skyStyle: 'photo',      // 'photo' (360° photographs, Poly Haven CC0) | 'generated' (animated clouds)
+  skyBlur: 1.2,           // soft focus of the photographic background, 0 (sharp) .. 3
   weather: true,          // rain, snow, petals and leaves with the skies that have them
   southern: false,        // 'auto' sky: southern-hemisphere seasons
   size: 0.78,             // clock diameter as a fraction of the screen's shorter side
