@@ -159,7 +159,7 @@ jobs:
           set -euo pipefail
           codesign --force --options runtime --timestamp --keychain "$SIGN_KEYCHAIN" --sign "$MACOS_SIGN_IDENTITY" out/RailSaver.saver
           codesign --verify --deep --strict -vv out/RailSaver.saver
-          codesign -dv --verbose=4 out/RailSaver.saver 2>&1 | grep -E '^(Identifier|Format|CodeDirectory|Authority|Timestamp|TeamIdentifier|Runtime Version)='
+          codesign -dv --verbose=4 out/RailSaver.saver 2>&1 | grep -E '^(Identifier=|Format=|CodeDirectory |Authority=|Timestamp=|TeamIdentifier=|Runtime Version=)'
       - name: Notarize (notarytool)
         id: notarize
         if: steps.mode.outputs.sign == 'true'
