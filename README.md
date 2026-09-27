@@ -69,7 +69,7 @@ Requirements: x64, the Microsoft Edge **WebView2 Runtime** (present on almost ev
 
 ## Install (macOS 11+)
 
-Unzip `RailSaver-mac-x.y.z.zip` and double-click `RailSaver.saver`, then choose it in **System Settings → Screen Saver** and click **Options…** for its settings. It is ad-hoc signed but not notarised. If macOS refuses to open it, run `xattr -dr com.apple.quarantine RailSaver.saver` first.
+Unzip `RailSaver-mac-x.y.z.zip` and double-click `RailSaver.saver`, then choose it in **System Settings → Screen Saver** and click **Options…** for its settings. It is signed with Developer ID and notarized by Apple, so it opens normally.
 
 ## Settings
 
@@ -140,7 +140,7 @@ publish\RailSaver.exe /w      # run in a window;  /s full screen;  /c settings; 
 
 Build on macOS: `mac/build.sh 0.1.0` → `out/RailSaver.saver`.
 
-GitHub Actions builds the Windows installer, the portable zip, the macOS bundle and preview renders on every push. Pushes to `main` and `v*` tags publish a release.
+GitHub Actions builds the Windows installer, the portable zip, the macOS bundle and preview renders on every push. Pushes to `main` and `v*` tags publish a release. The macOS bundle is signed with Developer ID, notarized and stapled in CI when the signing secrets are present (forks fall back to an ad-hoc signature).
 
 ## About the design
 

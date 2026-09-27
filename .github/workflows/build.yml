@@ -90,6 +90,12 @@ jobs:
   mac:
     name: macOS screen saver
     runs-on: macos-latest
+    outputs:
+      # 'true' only when the bundle was Developer ID signed, notarized (Accepted) and stapled.
+      notarized: ${{ steps.staple.outputs.notarized || 'false' }}
+    env:
+      # Override with a repository variable if the certificate is ever reissued under another name.
+      MACOS_SIGN_IDENTITY: "${{ vars.MACOS_SIGN_IDENTITY || 'Developer ID Application: Evangelos Makrydakis (7BMSHL4YZ6)' }}"
     steps:
       - uses: actions/checkout@v4
       - name: Version
@@ -107,11 +113,107 @@ jobs:
           lipo -info out/RailSaver.saver/Contents/MacOS/RailSaver
           test -f out/RailSaver.saver/Contents/Resources/web/index.html
           codesign --verify --verbose out/RailSaver.saver
+
+      # ---- Developer ID signing + notarization (skipped when the secrets are absent, e.g. forks) ----
+      - name: Signing mode
+        id: mode
+        env:
+          HAVE_CERT: ${{ secrets.MACOS_CERT_P12_BASE64 != '' && secrets.MACOS_CERT_PASSWORD != '' }}
+          HAVE_API_KEY: ${{ secrets.APPLE_API_KEY_P8_BASE64 != '' && secrets.APPLE_API_KEY_ID != '' && secrets.APPLE_API_ISSUER_ID != '' }}
+        run: |
+          if [ "$HAVE_CERT" = true ] && [ "$HAVE_API_KEY" = true ]; then
+            echo "sign=true" >> "$GITHUB_OUTPUT"
+            echo "Signing with Developer ID and notarizing."
+          else
+            echo "sign=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=macOS signing::Signing secrets not available: keeping the ad-hoc signature (not notarized)."
+          fi
+      - name: Import Developer ID certificate into a temporary keychain
+        if: steps.mode.outputs.sign == 'true'
+        env:
+          MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          KC="$RUNNER_TEMP/railsaver-signing.keychain-db"
+          KC_PASS="$(uuidgen)"
+          echo "::add-mask::$KC_PASS"
+          echo "SIGN_KEYCHAIN=$KC" >> "$GITHUB_ENV"
+          security create-keychain -p "$KC_PASS" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KC_PASS" "$KC"
+          printf '%s' "$MACOS_CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/developer-id.p12"
+          security import "$RUNNER_TEMP/developer-id.p12" -k "$KC" -f pkcs12 -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/developer-id.p12"
+          # Apple's Developer ID G2 intermediate (public), pinned by SHA-256, so codesign can build the chain.
+          curl -fsSL --retry 3 https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer -o "$RUNNER_TEMP/DeveloperIDG2CA.cer"
+          echo "f16cd3c54c7f83cea4bf1a3e6a0819c8aaa8e4a1528fd144715f350643d2df3a  $RUNNER_TEMP/DeveloperIDG2CA.cer" | shasum -a 256 -c -
+          security import "$RUNNER_TEMP/DeveloperIDG2CA.cer" -k "$KC" || true
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KC_PASS" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$KC"
+      - name: Sign with Developer ID (hardened runtime, secure timestamp)
+        if: steps.mode.outputs.sign == 'true'
+        run: |
+          set -euo pipefail
+          codesign --force --options runtime --timestamp --keychain "$SIGN_KEYCHAIN" --sign "$MACOS_SIGN_IDENTITY" out/RailSaver.saver
+          codesign --verify --deep --strict -vv out/RailSaver.saver
+          codesign -dv --verbose=4 out/RailSaver.saver 2>&1 | grep -E '^(Identifier|Format|CodeDirectory|Authority|Timestamp|TeamIdentifier|Runtime Version)='
+      - name: Notarize (notarytool)
+        id: notarize
+        if: steps.mode.outputs.sign == 'true'
+        timeout-minutes: 45
+        env:
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/notary"
+          KEY="$RUNNER_TEMP/notary/AuthKey_${APPLE_API_KEY_ID}.p8"
+          printf '%s' "$APPLE_API_KEY_P8_BASE64" | base64 --decode > "$KEY"
+          ditto -c -k --keepParent out/RailSaver.saver "$RUNNER_TEMP/notary/RailSaver-notarize.zip"
+          set +e
+          xcrun notarytool submit "$RUNNER_TEMP/notary/RailSaver-notarize.zip" \
+            --key "$KEY" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" \
+            --wait --timeout 40m --output-format json > "$RUNNER_TEMP/notary/result.json"
+          rc=$?
+          set -e
+          cat "$RUNNER_TEMP/notary/result.json"; echo
+          id="$(plutil -extract id raw -o - "$RUNNER_TEMP/notary/result.json" 2>/dev/null || true)"
+          status="$(plutil -extract status raw -o - "$RUNNER_TEMP/notary/result.json" 2>/dev/null || true)"
+          echo "Notarization status: ${status:-unknown} (submission ${id:-none}, notarytool exit $rc)"
+          if [ "$status" != "Accepted" ]; then
+            if [ -n "$id" ]; then
+              echo "---- notary log ----"
+              xcrun notarytool log "$id" --key "$KEY" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" || true
+            fi
+            echo "::error title=Notarization::status '${status:-unknown}' (expected Accepted)"
+            exit 1
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+      - name: Staple + Gatekeeper check
+        id: staple
+        if: steps.mode.outputs.sign == 'true'
+        run: |
+          set -euo pipefail
+          xcrun stapler staple out/RailSaver.saver
+          xcrun stapler validate out/RailSaver.saver
+          codesign --verify --deep --strict -vv out/RailSaver.saver
+          # A .saver is not an app, so assess it as downloaded content (the type used for installer/content checks).
+          spctl -a -vv -t install out/RailSaver.saver 2>&1 | tee "$RUNNER_TEMP/spctl.txt"
+          grep -q 'accepted' "$RUNNER_TEMP/spctl.txt"
+          grep -q 'source=Notarized Developer ID' "$RUNNER_TEMP/spctl.txt"
+          echo "notarized=true" >> "$GITHUB_OUTPUT"
+
       - name: Smoke test (host the saver view, snapshot)
         continue-on-error: true
         run: |
           # Universal test host: runs the Apple silicon slice natively and the
           # Intel slice under Rosetta, so both builds are loaded and rendered.
+          # Runs against the final (signed + stapled, or ad-hoc) bundle.
           clang -fobjc-arc -arch arm64 -arch x86_64 -framework Cocoa -framework ScreenSaver -framework WebKit mac/test/host.m -o out/host
           mkdir -p out/mac-shot
           uname -m; sw_vers
@@ -137,11 +239,26 @@ jobs:
           name: mac-smoke-test
           path: out/mac-shot/
       - name: Zip
-        run: cd out && ditto -c -k --sequesterRsrc --keepParent RailSaver.saver RailSaver-mac-${{ steps.ver.outputs.version }}.zip
+        run: |
+          set -euo pipefail
+          cd out
+          ZIP="RailSaver-mac-${{ steps.ver.outputs.version }}.zip"
+          ditto -c -k --keepParent RailSaver.saver "$ZIP"
+          # Check the bundle as users will get it: unpacked from the release zip.
+          rm -rf zipcheck && mkdir zipcheck && ditto -x -k "$ZIP" zipcheck
+          codesign --verify --deep --strict -vv zipcheck/RailSaver.saver
+          if [ '${{ steps.staple.outputs.notarized }}' = true ]; then xcrun stapler validate zipcheck/RailSaver.saver; fi
+          rm -rf zipcheck
+          shasum -a 256 "$ZIP"
       - uses: actions/upload-artifact@v4
         with:
           name: RailSaver-${{ steps.ver.outputs.version }}-mac
           path: out/RailSaver-mac-*.zip
+      - name: Remove temporary keychain and API key
+        if: always()
+        run: |
+          if [ -n "${SIGN_KEYCHAIN:-}" ]; then security delete-keychain "$SIGN_KEYCHAIN" || true; fi
+          rm -rf "$RUNNER_TEMP/notary" "$RUNNER_TEMP/developer-id.p12" "$RUNNER_TEMP/DeveloperIDG2CA.cer"
 
   release:
     name: GitHub release
@@ -160,6 +277,12 @@ jobs:
           v='${{ env.VERSION }}'
           if [ '${{ github.ref_type }}' = 'tag' ]; then v='${{ github.ref_name }}'; v="${v#v}"; fi
           echo "version=$v" >> "$GITHUB_OUTPUT"
+          if [ '${{ needs.mac.outputs.notarized }}' = true ]; then
+            note='It is signed with Developer ID and notarized by Apple, so it opens normally.'
+          else
+            note='This build is not notarized: if macOS refuses, run `xattr -dr com.apple.quarantine ~/Downloads/RailSaver.saver` first.'
+          fi
+          echo "macnote=$note" >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.version }}
@@ -174,6 +297,6 @@ jobs:
             - No installer? Unzip the portable `.zip`, right-click `RailSaver.scr` → **Install**.
             - Already installed (0.7.0 or later)? RailSaver updates itself: **Settings → Updates**, or automatically when the screen saver runs.
 
-            **macOS (11+):** unzip `RailSaver-mac-${{ steps.ver.outputs.version }}.zip` and double-click `RailSaver.saver`. It is not notarised: if macOS refuses, run `xattr -dr com.apple.quarantine ~/Downloads/RailSaver.saver` first.
+            **macOS (11+):** unzip `RailSaver-mac-${{ steps.ver.outputs.version }}.zip` and double-click `RailSaver.saver`. ${{ steps.ver.outputs.macnote }}
 
             Built from ${{ github.sha }}.
