@@ -22,6 +22,7 @@ if command -v sips >/dev/null 2>&1; then
   sips -z 200 180 docs/icon.png --out "$OUT/Contents/Resources/thumbnail@2x.png" >/dev/null 2>&1 || true
 fi
 
-# Ad-hoc signature (required on Apple silicon). Not notarised.
+# Ad-hoc signature (required on Apple silicon). CI re-signs with Developer ID
+# and notarizes when the signing secrets are available (.github/workflows/build.yml).
 codesign --force --deep --sign - "$OUT"
 echo "Built $OUT ($VERSION)"
