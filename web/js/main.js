@@ -424,6 +424,7 @@ function frame(now) {
   if (totalFrames === 3) {
     document.documentElement.dataset.ready = '1';
     document.getElementById('fade')?.classList.add('out');
+    document.getElementById('startup')?.remove();
     postToHost({ type: 'log', message: `first frames rendered (${rt.width}x${rt.height})` });
   }
 }

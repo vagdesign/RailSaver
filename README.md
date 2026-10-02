@@ -128,6 +128,8 @@ npx http-server web -p 8080 -c-1     # open http://localhost:8080/  or  /setting
 Any setting can be put in the URL, plus `time=10:09:36` (show that time), `still` (freeze), `swingPhase=0.25`, `showFps=1`:
 `http://localhost:8080/?quality=ultra&background=wall&stopSeconds=1.5`
 
+The pages load a bundle (`web/dist/`, made by `npm install --no-save esbuild && node tools/bundle.mjs`) so they also run on the older WebKit of macOS 11 Big Sur and 12 Monterey, which has no import maps and no class static blocks. Without the bundle they load the ES modules directly.
+
 Headless previews (as in CI): `npm install --no-save playwright && node tools/screenshot.mjs previews "background=wall"`.
 
 Build on Windows (.NET 10 SDK):

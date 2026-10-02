@@ -16,7 +16,7 @@
   body { display: grid; grid-template-columns: minmax(320px, 400px) 1fr; grid-template-rows: 1fr auto; height: 100vh; }
   aside { grid-row: 1; overflow-y: auto; padding: 18px 20px 12px; border-right: 1px solid var(--line); background: var(--panel); }
   main { grid-row: 1; position: relative; background: #000; min-height: 0; }
-  main iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  main iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
   footer { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--panel); }
   footer .grow { flex: 1; color: var(--muted); font-size: 12.5px; }
   h1 { font-size: 19px; margin: 0 0 2px; letter-spacing: 0.01em; display: flex; align-items: center; gap: 10px; }
@@ -53,7 +53,7 @@
   .knob .tick { position: absolute; left: 50%; top: 50%; width: 2px; height: 7px; margin: -3.5px -1px; background: #9aa1a9; }
   .knob .t12 { transform: rotate(0deg) translateY(-37px); } .knob .t3 { transform: rotate(90deg) translateY(-37px); }
   .knob .t6 { transform: rotate(180deg) translateY(-37px); } .knob .t9 { transform: rotate(270deg) translateY(-37px); }
-  .knob .pointer { position: absolute; inset: 0; pointer-events: none; }
+  .knob .pointer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
   .knob .sun { position: absolute; left: 50%; top: 3px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%;
     background: radial-gradient(circle, #fff6c8, #ffc23a 60%, #ff9d1a); box-shadow: 0 0 10px 3px #ffb52e99; }
   .sr { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
@@ -223,6 +223,10 @@
   <button id="cancel" type="button">Cancel</button>
   <button id="ok" class="primary" type="button">Save</button>
 </footer>
-<script type="module" src="js/ui.js"></script>
+<script>
+// Plain bundle first (works on older WebKit); the ES modules when there is no bundle.
+function rsLoadModules() { var s = document.createElement('script'); s.type = 'module'; s.src = 'js/ui.js'; document.body.appendChild(s); }
+</script>
+<script src="dist/settings.js" onerror="rsLoadModules()"></script>
 </body>
 </html>

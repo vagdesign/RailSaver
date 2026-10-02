@@ -8,16 +8,60 @@
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
   canvas { display: block; width: 100vw; height: 100vh; }
   body.saver, body.saver * { cursor: none !important; }
-  #fade { position: fixed; inset: 0; background: #000; pointer-events: none; transition: opacity 1.2s ease-out; }
+  #fade { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000; pointer-events: none; transition: opacity 1.2s ease-out; }
   #fade.out { opacity: 0; }
   #fps { position: fixed; left: 10px; bottom: 8px; font: 12px/1.3 ui-monospace, Consolas, monospace; color: #7f7; text-shadow: 0 0 3px #000; }
 </style>
-<script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
 <canvas id="scene"></canvas>
 <div id="fps" hidden></div>
 <div id="fade"></div>
-<script type="module" src="js/main.js"></script>
+<script>
+// Start-up guard (plain script, runs on any WebKit): reports load errors to the
+// host log, and if the clock has not started after 12 s, says why on screen
+// instead of leaving a black screen.
+(function () {
+  var lastError = '';
+  function post(m) {
+    try {
+      if (window.webkit && webkit.messageHandlers && webkit.messageHandlers.railsaver) webkit.messageHandlers.railsaver.postMessage({ type: 'log', message: m });
+      else if (window.chrome && chrome.webview) chrome.webview.postMessage({ type: 'log', message: m });
+    } catch (e) { /* no host */ }
+  }
+  window.addEventListener('error', function (e) {
+    lastError = (e.message || 'script error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '');
+    post('startup error: ' + lastError);
+  });
+  window.rsLoadModules = function () {
+    // No bundle (development): load the ES modules with an import map.
+    post('no bundle; loading modules');
+    var m = document.createElement('script');
+    m.type = 'importmap';
+    m.textContent = '{ "imports": { "three": "./lib/three.module.js" } }';
+    document.head.appendChild(m);
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.src = 'js/main.js';
+    document.body.appendChild(s);
+  };
+  setTimeout(function () {
+    if (document.documentElement.getAttribute('data-ready')) return;
+    var gl = false;
+    try { gl = !!document.createElement('canvas').getContext('webgl2'); } catch (e) { /* ignore */ }
+    var msg = 'RailSaver could not start. ' + (lastError || 'No error was reported.') +
+      ' WebGL 2: ' + (gl ? 'yes' : 'NO') + '. ' + navigator.userAgent;
+    post(msg);
+    var f = document.getElementById('fade');
+    if (f) f.parentNode.removeChild(f);
+    var d = document.createElement('div');
+    d.id = 'startup';
+    d.style.cssText = 'position:fixed;left:16px;right:16px;bottom:14px;font:13px/1.45 -apple-system,Segoe UI,sans-serif;color:#f99;z-index:30';
+    d.textContent = msg;
+    document.body.appendChild(d);
+  }, 12000);
+})();
+</script>
+<script src="dist/railsaver.js" onerror="rsLoadModules()"></script>
 </body>
 </html>
