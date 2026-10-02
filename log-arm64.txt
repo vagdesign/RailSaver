@@ -1,0 +1,7 @@
+2026-10-02 19:29:42.254 host[3146:13736] RailSaver: view created ({{0, 0}, {1280, 720}}, preview 0)
+2026-10-02 19:29:44.611 host[3146:13736] RailSaver: log RailSaver saver; WebGL 2; GPU: Apple GPU; 1280x720 @1
+2026-10-02 19:29:46.086 host[3146:13736] RailSaver: ready mac
+2026-10-02 19:29:46.095 host[3146:13736] RailSaver: page loaded railsaver://app/index.html?mode=saver&audio=1
+2026-10-02 19:29:48.965 host[3146:13736] RailSaver: log first frames rendered (1280x720)
+2026-10-02 19:29:56.148 host[3146:13736] host: page state {"ready":"1","error":null,"webgl":true,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)"} 
+2026-10-02 19:29:57.333 host[3146:13736] host: wrote out/mac-shot/saver-arm64.png
