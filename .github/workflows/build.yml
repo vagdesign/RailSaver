@@ -24,7 +24,7 @@ jobs:
           node-version: 22
       - name: Photographic skies (sky-assets branch)
         run: tools/get-skies.sh
-      - name: Bundle the page scripts (older WebKit: macOS 11/12)
+      - name: Bundle the page scripts (older WebKit, macOS 11 and 12)
         shell: bash
         run: npm install --no-save esbuild@0.25.10 && node tools/bundle.mjs
       - name: Syntax check
@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: tools/get-skies.sh
 
-      - name: Bundle the page scripts (older WebKit: macOS 11/12)
+      - name: Bundle the page scripts (older WebKit, macOS 11 and 12)
         shell: bash
         run: npm install --no-save esbuild@0.25.10 && node tools/bundle.mjs
       - name: Publish (self-contained, win-x64)
@@ -112,7 +112,7 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
       - name: Photographic skies (sky-assets branch)
         run: tools/get-skies.sh
-      - name: Bundle the page scripts (older WebKit: macOS 11/12)
+      - name: Bundle the page scripts (older WebKit, macOS 11 and 12)
         shell: bash
         run: npm install --no-save esbuild@0.25.10 && node tools/bundle.mjs
       - name: Build RailSaver.saver
