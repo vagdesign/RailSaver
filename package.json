@@ -6,6 +6,7 @@
   "scripts": {
     "serve": "npx http-server web -p 8080 -c-1",
     "test": "node tools/test-motion.mjs",
-    "screenshot": "node tools/screenshot.mjs previews"
+    "screenshot": "node tools/screenshot.mjs previews",
+    "bundle": "node tools/bundle.mjs"
   }
 }
