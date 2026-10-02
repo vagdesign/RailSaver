@@ -6,8 +6,9 @@
 // fall back to loading the ES modules directly (fine in current browsers).
 import { build } from 'esbuild';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', 'web');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'web');   // works on Windows too
 const common = {
   bundle: true,
   format: 'iife',
